@@ -3,12 +3,7 @@
   command = "echo 'Static site - no build required'"
   publish = "."
 
-# Redirect all API calls to the backend (optional: remove if using admin panel's Backend URL)
-[[redirects]]
-  from = "/api/*"
-  to = "http://localhost:3001/api/:splat"
-  status = 200
-  force = false
+# API proxy disabled - frontend uses Backend URL from admin panel (getBackendUrl())
 
 # Serve index.html for all routes (SPA fallback)
 [[redirects]]
