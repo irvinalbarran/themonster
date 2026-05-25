@@ -293,6 +293,7 @@ textarea{resize:vertical;min-height:60px}
 <button class="tab-btn" data-tab="gastos">🏢 Gastos</button>
 <button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
 <button class="tab-btn" data-tab="tienda">🛒 Tienda Online</button>
+<button class="tab-btn" data-tab="imagenes">🖼️ Imágenes</button>
 </div>
 
 <!-- TAB: INGREDIENTES -->
@@ -432,6 +433,25 @@ textarea{resize:vertical;min-height:60px}
 </div>
 <div id="backup-status" style="margin-top:.5rem;font-size:.85rem;min-height:1.2rem"></div>
 <div id="backup-list" style="margin-top:.5rem;font-size:.8rem"></div>
+</div>
+</div>
+
+<!-- TAB: IMÁGENES -->
+<div class="tab-content" id="tab-imagenes">
+<div class="flex-between mb-1"><h2>🖼️ Gestor de imágenes</h2>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap">
+<button class="btn btn-sm btn-secondary" onclick="cargarGestorImagenes()">🔄 Refrescar</button>
+<button class="btn btn-sm btn-danger" onclick="limpiarImagenesHuérfanas()">🧹 Limpiar no usadas</button>
+</div>
+</div>
+<div class="card">
+<p class="text-muted" style="font-size:.85rem;margin-bottom:.75rem">
+Las imágenes se convierten automáticamente a <strong>WebP</strong> y se redimensionan a max 1200px al subirse.
+Se generan miniaturas para las vistas de lista.
+</p>
+<div id="gestor-imagenes-content" style="min-height:100px">
+<p class="text-muted">Cargando imágenes...</p>
+</div>
 </div>
 </div>
 
@@ -711,7 +731,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
     b.classList.add('active');
     const t=b.dataset.tab;
     document.getElementById('tab-'+t).classList.add('active');
-    const f={costeo:'renderCosteo',platillos:'renderPlatillos',plataformas:'renderPlataformas',gastos:'renderGastos',dashboard:'renderDashboard',tienda:'renderTienda'}[t];
+    const f={costeo:'renderCosteo',platillos:'renderPlatillos',plataformas:'renderPlataformas',gastos:'renderGastos',dashboard:'renderDashboard',tienda:'renderTienda',imagenes:'cargarGestorImagenes'}[t];
     if(f) try{window[f]()}catch(e){}
   });
 });
@@ -866,20 +886,26 @@ function confirmarImportarIngredientes() {
 
 // ========== PLATILLOS ==========
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function thumbUrl(url, size) {
+  if (!url) return '';
+  const parts = url.split('/');
+  const name = parts.pop();
+  return parts.join('/') + '/thumbs/' + size + '_' + name;
+}
 
 function renderPlatillos(){const c=document.getElementById('platillos-list');if(!platillos.length){c.innerHTML='<div class="card"><p class="empty-state"><div class="icon">🍽️</div><p>No hay platillos.</p></div>';return}
-c.innerHTML=platillos.map(p=>{const ct=calcularCostoPlatillo(p),por=p.portions||1,cp=por>0?ct/por:0;return `<div class="card"><div class="flex-between"><div style="display:flex;align-items:center;gap:.75rem">${p.image?'<img src="'+p.image+'" class="preview-img-sm" alt="">':''}<div><h3 style="margin:0">${escHtml(p.name)}</h3><p style="font-size:.8rem;color:var(--text-light);margin-top:.15rem">${p.category||'Sin categoría'} · ${por} porción(es)</p></div></div><div style="text-align:right"><div style="font-size:1.3rem;font-weight:700;color:var(--primary)">$${ct.toFixed(2)}</div><div style="font-size:.8rem;color:var(--text-light)">costo total</div><div style="font-size:.9rem;font-weight:600">$${cp.toFixed(2)} / porción</div></div></div><div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editarPlatillo('${p.id}')">✏️ Editar</button><button class="btn btn-sm btn-danger" onclick="eliminarPlatillo('${p.id}')">🗑️</button>${!p.image?'<span class="badge badge-warning" style="align-self:center">Sin imagen</span>':''}</div></div>`}).join('')}
+c.innerHTML=platillos.map(p=>{const ct=calcularCostoPlatillo(p),por=p.portions||1,cp=por>0?ct/por:0;return `<div class="card"><div class="flex-between"><div style="display:flex;align-items:center;gap:.75rem">${p.image?'<img src="'+thumbUrl(p.image,48)+'" class="preview-img-sm" alt="" onerror="this.src=\''+p.image+'\'">':''}<div><h3 style="margin:0">${escHtml(p.name)}</h3><p style="font-size:.8rem;color:var(--text-light);margin-top:.15rem">${p.category||'Sin categoría'} · ${por} porción(es)</p></div></div><div style="text-align:right"><div style="font-size:1.3rem;font-weight:700;color:var(--primary)">$${ct.toFixed(2)}</div><div style="font-size:.8rem;color:var(--text-light)">costo total</div><div style="font-size:.9rem;font-weight:600">$${cp.toFixed(2)} / porción</div></div></div><div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editarPlatillo('${p.id}')">✏️ Editar</button><button class="btn btn-sm btn-danger" onclick="eliminarPlatillo('${p.id}')">🗑️</button>${!p.image?'<span class="badge badge-warning" style="align-self:center">Sin imagen</span>':''}</div></div>`}).join('')}
 
 function abrirModalPlatillo(d){editandoPlatilloId=d?d.id:null;document.getElementById('modal-platillo-title').textContent=d?'Editar Platillo':'Nuevo Platillo';document.getElementById('platillo-id').value=d?d.id:'';document.getElementById('plat-nombre').value=d?d.name:'';document.getElementById('plat-porciones').value=d?d.portions:'1';document.getElementById('plat-descripcion').value=d?d.description||'':'';
 const catsSelect=document.getElementById('plat-categoria');catsSelect.innerHTML='<option value="">Sin categoría</option>'+configTienda.categorias.map(c=>`<option value="${c}" ${d&&d.category===c?'selected':''}>${c}</option>`).join('');
 document.getElementById('plat-precio').value=d&&d.precioMenu?d.precioMenu:'';
 platilloImagenActual=d?d.image||null:null;const pp=document.getElementById('plat-img-preview'),pd=document.getElementById('plat-img-delete');
-if(platilloImagenActual){pp.innerHTML='<img src="'+platilloImagenActual+'" class="preview-img" style="width:120px;height:120px">';pd.style.display='inline-flex'}else{pp.innerHTML='';pd.style.display='none'}
+if(platilloImagenActual){pp.innerHTML='<img src="'+thumbUrl(platilloImagenActual,120)+'" class="preview-img" style="width:120px;height:120px" onerror="this.src=\''+platilloImagenActual+'\'">';pd.style.display='inline-flex'}else{pp.innerHTML='';pd.style.display='none'}
 recetaIngredientesTemp=d?JSON.parse(JSON.stringify(d.ingredients)):[];renderFilasIngrediente();actualizarPreviewCostoPlatillo();document.getElementById('modal-platillo').classList.add('active')}
 
-async function subirImagenPlatillo(input){const file=input.files[0];if(!file)return;if(file.size>300*1024){alert('La imagen debe ser menor a 300KB.');return}
+async function subirImagenPlatillo(input){const file=input.files[0];if(!file)return;if(file.size>5*1024*1024){alert('La imagen debe ser menor a 5MB.');return}
 const bu=getBackendUrl();const form=new FormData();form.append('image',file);
-try{const res=await fetch(bu+'/api/upload/image',{method:'POST',body:form});const data=await res.json();if(data.ok){platilloImagenActual=data.url;document.getElementById('plat-img-preview').innerHTML='<img src="'+data.url+'" class="preview-img" style="width:120px;height:120px">';document.getElementById('plat-img-delete').style.display='inline-flex'}else{alert('Error al subir imagen: '+data.error)}}catch(e){alert('Error de conexión al servidor')};input.value=''}
+try{const res=await fetch(bu+'/api/upload/image',{method:'POST',body:form});const data=await res.json();if(data.ok){platilloImagenActual=data.url;const previewUrl=data.thumbs&&data.thumbs['120']?data.thumbs['120']:data.url;document.getElementById('plat-img-preview').innerHTML='<img src="'+previewUrl+'" class="preview-img" style="width:120px;height:120px">';document.getElementById('plat-img-delete').style.display='inline-flex'}else{alert('Error al subir imagen: '+data.error)}}catch(e){alert('Error de conexión al servidor')};input.value=''}
 function eliminarImagenPlatillo(){platilloImagenActual=null;document.getElementById('plat-img-preview').innerHTML='';document.getElementById('plat-img-delete').style.display='none'}
 
 function renderFilasIngrediente(){const c=document.getElementById('receta-ingredientes');if(!recetaIngredientesTemp.length){c.innerHTML='<p class="text-muted" style="font-size:.85rem;padding:.5rem 0">Sin ingredientes.</p>';return}
@@ -1073,8 +1099,8 @@ cont.innerHTML=`<div class="dash-grid"><div class="card-dash" style="border-top:
 function renderTienda(){const ct=configTienda;document.getElementById('store-nombre').value=ct.nombre;document.getElementById('store-desc').value=ct.desc;document.getElementById('store-color').value=ct.color;document.getElementById('store-envio').value=ct.envio;document.getElementById('store-min').value=ct.minOrder;document.getElementById('store-moneda').value=ct.moneda;document.getElementById('mp-public-key').value=ct.mpPublicKey;document.getElementById('mp-backend-url').value=ct.mpBackendUrl||'http://localhost:3001';
   document.getElementById('admin-token').value = adminToken ? '•••••' : '';
   cargarMpConfigFromBackend();
-const lp=document.getElementById('store-logo-preview');lp.innerHTML=ct.logo?'<img src="'+ct.logo+'" class="preview-img" style="width:64px;height:64px">':'<span class="text-muted" style="font-size:.8rem">Sin logo</span>';
-const bp=document.getElementById('store-banner-preview');bp.innerHTML=ct.banner?'<img src="'+ct.banner+'" class="preview-img" style="width:200px;height:80px;object-fit:cover">':'<span class="text-muted" style="font-size:.8rem">Sin banner</span>';
+const lp=document.getElementById('store-logo-preview');lp.innerHTML=ct.logo?'<img src="'+thumbUrl(ct.logo,64)+'" class="preview-img" style="width:64px;height:64px" onerror="this.src=\''+ct.logo+'\'">':'<span class="text-muted" style="font-size:.8rem">Sin logo</span>';
+const bp=document.getElementById('store-banner-preview');bp.innerHTML=ct.banner?'<img src="'+thumbUrl(ct.banner,200)+'" class="preview-img" style="width:200px;height:80px;object-fit:cover" onerror="this.src=\''+ct.banner+'\'">':'<span class="text-muted" style="font-size:.8rem">Sin banner</span>';
 const cl=document.getElementById('categorias-lista');cl.innerHTML=ct.categorias.map((c,i)=>`<span style="display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .7rem;background:var(--bg);border-radius:50px;font-size:.85rem;border:1px solid var(--border)">${escHtml(c)}<button onclick="eliminarCategoria(${i})" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:1rem">&times;</button></span>`).join('');
 const si=document.getElementById('platillos-sin-imagen');const sinImg=platillos.filter(p=>!p.image);si.innerHTML=sinImg.length?sinImg.map(p=>`<span style="display:inline-flex;align-items:center;gap:.5rem;margin:.25rem;padding:.25rem .5rem;background:#fef5e7;border-radius:6px;font-size:.85rem">📷 ${escHtml(p.name)} <button class="btn btn-sm btn-accent" onclick="editarPlatillo('${p.id}')">Subir</button></span>`).join(''):'<span class="text-success">✅ Todos los platillos tienen imagen</span>';}
 
@@ -1202,7 +1228,7 @@ function alternarVisibilidadToken() {
   }
 }
 
-async function subirImagenStore(tipo,input){const file=input.files[0];if(!file)return;if(file.size>500*1024){alert('La imagen debe ser menor a 500KB.');return}
+async function subirImagenStore(tipo,input){const file=input.files[0];if(!file)return;if(file.size>5*1024*1024){alert('La imagen debe ser menor a 5MB.');return}
 const bu=getBackendUrl();const form=new FormData();form.append('image',file);
 try{const res=await fetch(bu+'/api/upload/image',{method:'POST',body:form});const data=await res.json();if(data.ok){configTienda[tipo]=data.url;guardarConfigTienda();renderTienda()}else{alert('Error: '+data.error)}}catch(e){alert('Error de conexión')};input.value=''}
 
@@ -1255,8 +1281,8 @@ function abrirTienda(){document.getElementById('storefront').classList.add('open
 function cerrarTienda(){document.getElementById('storefront').classList.remove('open');document.body.classList.remove('storefront-active');cerrarCarrito()}
 
 function renderStore(){const ct=configTienda;document.getElementById('store-name-el').textContent=ct.nombre;document.getElementById('store-desc-el').textContent=ct.desc||'';
-const banner=document.getElementById('store-banner-img');banner.innerHTML=ct.banner?'<img src="'+ct.banner+'" style="width:100%;height:100%;object-fit:cover">':'';
-const logo=document.querySelector('.store-logo');if(ct.logo){if(!logo){const l=document.createElement('img');l.className='store-logo';l.src=ct.logo;document.getElementById('store-banner-el').appendChild(l)}else{logo.src=ct.logo}}else if(logo)logo.remove();
+const banner=document.getElementById('store-banner-img');banner.innerHTML=ct.banner?'<img src="'+thumbUrl(ct.banner,200)+'" style="width:100%;height:100%;object-fit:cover" onerror="this.src=\''+ct.banner+'\'">':'';
+const logo=document.querySelector('.store-logo');if(ct.logo){if(!logo){const l=document.createElement('img');l.className='store-logo';l.src=thumbUrl(ct.logo,64);l.onerror=function(){this.src=ct.logo};document.getElementById('store-banner-el').appendChild(l)}else{logo.src=thumbUrl(ct.logo,64);logo.onerror=function(){this.src=ct.logo}}}else if(logo)logo.remove();
 const cats=document.getElementById('store-cats');cats.innerHTML='<div class="cat-chip active" onclick="filtrarCategoria(\'todas\',this)">🍽️ Todas</div>'+ct.categorias.map(c=>`<div class="cat-chip" onclick="filtrarCategoria('${c}',this)">${c}</div>`).join('');
 renderStoreDishes();actualizarCarritoUI()}
 
@@ -1264,7 +1290,7 @@ function filtrarCategoria(cat,el){document.querySelectorAll('.cat-chip').forEach
 function renderStoreDishes(){const busq=document.getElementById('store-search').value.toLowerCase().trim();const cont=document.getElementById('store-dishes');const filtrados=platillos.filter(p=>{if(storeCategoriaActiva!=='todas'&&p.category!==storeCategoriaActiva)return false;if(busq&&!p.name.toLowerCase().includes(busq)&&!(p.description||'').toLowerCase().includes(busq))return false;return true});
 if(!filtrados.length){cont.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No hay platillos disponibles.</p></div>';return}
 cont.innerHTML=filtrados.map(p=>{const ct=calcularCostoPlatillo(p),mg=parseInt(document.getElementById('margen-ganancia').value)||30;let precio=p.precioMenu||(mg>0?((p.portions>0?ct/p.portions:ct)/(1-mg/100)):0);precio=Math.max(precio,1);const itemEnCarrito=carrito.items.find(i=>i.id===p.id);const qty=itemEnCarrito?itemEnCarrito.qty:0;const img=p.image||'';return `<div class="store-dish">
-${img?'<img class="store-dish-img" src="'+img+'" alt="">':'<div class="store-dish-img-placeholder">🍽️</div>'}
+${img?'<img class="store-dish-img" src="'+thumbUrl(img,90)+'" alt="" onerror="this.src=\''+img+'\'">':'<div class="store-dish-img-placeholder">🍽️</div>'}
 <div class="store-dish-info"><div><h4>${escHtml(p.name)}</h4>${p.description?'<div class="desc">'+escHtml(p.description)+'</div>':''}</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:.35rem"><span class="price">$${precio.toFixed(2)}</span>${qty>0?`<div class="qty-control"><button onclick="carritoCambiarQty('${p.id}',-1)">−</button><span>${qty}</span><button onclick="carritoCambiarQty('${p.id}',1)">+</button></div>`:`<button class="add-btn" onclick="carritoAgregar('${p.id}')">+</button>`}</div></div></div>`}).join('')}
 
 // ========== CARRITO ==========
@@ -1279,7 +1305,7 @@ function abrirCarrito(){document.getElementById('cart-overlay').classList.add('o
 function cerrarCarrito(){document.getElementById('cart-overlay').classList.remove('open');document.getElementById('cart-sheet').classList.remove('open')}
 
 function renderCartSheet(){const items=document.getElementById('cart-items'),footer=document.getElementById('cart-footer');if(!carrito.items.length){items.innerHTML='<div class="empty-state" style="padding:1rem"><div class="icon">🛒</div><p style="font-size:.9rem">Tu carrito está vacío</p></div>';footer.innerHTML='';return}
-items.innerHTML=carrito.items.map(i=>`<div class="cart-item"><img class="cart-item-img" src="${i.image||''}" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2244%22 height=%2244%22><rect fill=%22%23f0edeb%22 width=%2244%22 height=%2244%22 rx=%228%22/></svg>'"><div class="cart-item-info"><div class="ci-name">${escHtml(i.name)}</div><div class="ci-price">$${(i.price*i.qty).toFixed(2)}</div></div><div class="cart-qty"><button onclick="carritoCambiarQty('${i.id}',-1)">−</button><span>${i.qty}</span><button onclick="carritoCambiarQty('${i.id}',1)">+</button></div><button onclick="carritoEliminar('${i.id}')" style="border:none;background:none;color:var(--text-light);cursor:pointer;font-size:1.1rem">✕</button></div>`).join('');
+items.innerHTML=carrito.items.map(i=>`<div class="cart-item"><img class="cart-item-img" src="${thumbUrl(i.image,48)||i.image||''}" alt="" onerror="this.src='${i.image||'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2244%22 height=%2244%22><rect fill=%22%23f0edeb%22 width=%2244%22 height=%2244%22 rx=%228%22/></svg>'}'"><div class="cart-item-info"><div class="ci-name">${escHtml(i.name)}</div><div class="ci-price">$${(i.price*i.qty).toFixed(2)}</div></div><div class="cart-qty"><button onclick="carritoCambiarQty('${i.id}',-1)">−</button><span>${i.qty}</span><button onclick="carritoCambiarQty('${i.id}',1)">+</button></div><button onclick="carritoEliminar('${i.id}')" style="border:none;background:none;color:var(--text-light);cursor:pointer;font-size:1.1rem">✕</button></div>`).join('');
 const sub=carrito.items.reduce((s,i)=>s+i.price*i.qty,0),env=configTienda.envio||0,total=sub+env;
 footer.innerHTML=`<div style="border-top:2px solid var(--border);padding-top:1rem;margin-top:.5rem"><div class="flex-between" style="font-size:.9rem"><span>Subtotal (${carrito.items.reduce((s,i)=>s+i.qty,0)} items)</span><span>$${sub.toFixed(2)}</span></div>${env>0?`<div class="flex-between" style="font-size:.85rem;color:var(--text-light);margin-top:.25rem"><span>Envío</span><span>$${env.toFixed(2)}</span></div>`:''}<div class="flex-between" style="font-size:1.1rem;font-weight:800;margin-top:.35rem"><span>Total</span><span>$${total.toFixed(2)}</span></div>
 <button class="btn-store mt-1" onclick="mostrarCheckout()">Proceder al pago</button></div>`
@@ -1423,6 +1449,85 @@ async function migrarImagenesLegacy() {
       if (changed) { guardarState(); console.log('Migración completada:', json.migrated, 'imágenes migradas'); }
     }
   } catch (e) { console.warn('Error en migración de imágenes:', e.message); }
+}
+
+// ─── Image Manager ──────────────────────────────────────────────
+async function cargarGestorImagenes() {
+  const cont = document.getElementById('gestor-imagenes-content');
+  cont.innerHTML = '<p class="text-muted">Cargando imágenes...</p>';
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu + '/api/images');
+    const json = await res.json();
+    if (!json.ok || !json.images) { cont.innerHTML = '<p class="text-muted">Error al cargar imágenes.</p>'; return; }
+    renderGestorImagenes(json.images);
+  } catch (e) {
+    cont.innerHTML = '<p class="text-muted">Error de conexión al servidor.</p>';
+  }
+}
+
+function renderGestorImagenes(images) {
+  const cont = document.getElementById('gestor-imagenes-content');
+  if (!images.length) {
+    cont.innerHTML = '<p class="text-muted">No hay imágenes subidas. Sube una imagen al crear o editar un platillo.</p>';
+    return;
+  }
+  const totalSize = images.reduce((s, img) => s + img.size, 0);
+  let html = `<p style="font-size:.85rem;color:var(--text-light);margin-bottom:.75rem">${images.length} imagen(es) — ${(totalSize / 1024).toFixed(0)} KB total</p>`;
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem">';
+  images.forEach(img => {
+    const thumbUrl = img.thumbs && img.thumbs['120'] ? img.thumbs['120'] : img.url;
+    const sizeKB = (img.size / 1024).toFixed(1);
+    const usageHtml = img.usedBy && img.usedBy.length
+      ? img.usedBy.map(u => `<span style="font-size:.75rem;color:var(--text-light)">${u.type === 'platillo' ? '🍽️' : '🛒'} ${escHtml(u.name)}</span>`).join('')
+      : '<span style="font-size:.75rem;color:var(--warning)">⚠️ Sin uso</span>';
+    html += `<div style="background:var(--bg);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)">
+      <div style="width:100%;height:120px;background:var(--card-bg);display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <img src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">
+      </div>
+      <div style="padding:.5rem">
+        <div style="font-size:.7rem;color:var(--text-light);word-break:break-all;margin-bottom:.35rem">${escHtml(img.filename)}</div>
+        <div style="font-size:.75rem;margin-bottom:.35rem">${img.webp ? '✅ WebP' : '📷 Original'} — ${sizeKB} KB</div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:.5rem">${usageHtml}</div>
+        <button class="btn btn-sm btn-danger" style="width:100%;font-size:.75rem" onclick="eliminarImagen('${img.filename}')">🗑️ Eliminar</button>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+async function eliminarImagen(filename) {
+  if (!confirm('¿Eliminar esta imagen? Los platillos que la usen perderán su imagen.')) return;
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu + '/api/images/' + encodeURIComponent(filename), { method: 'DELETE' });
+    const json = await res.json();
+    if (json.ok) {
+      cargarGestorImagenes();
+    } else {
+      alert('Error: ' + (json.error || 'No se pudo eliminar'));
+    }
+  } catch (e) {
+    alert('Error de conexión al servidor.');
+  }
+}
+
+async function limpiarImagenesHuérfanas() {
+  if (!confirm('¿Eliminar todas las imágenes que no están siendo usadas por ningún platillo o configuración?')) return;
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu + '/api/images/cleanup', { method: 'POST' });
+    const json = await res.json();
+    if (json.ok) {
+      alert('🧹 Se eliminaron ' + json.removed + ' imágenes no usadas.');
+      cargarGestorImagenes();
+    } else {
+      alert('Error: ' + (json.error || 'No se pudo limpiar'));
+    }
+  } catch (e) {
+    alert('Error de conexión al servidor.');
+  }
 }
 
 // ─── Main payment processing ──────────────────────────────────

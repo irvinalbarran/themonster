@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import sharp from 'sharp';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
 
@@ -20,9 +21,12 @@ const CONFIG_PATH = path.join(__dirname, 'mp-config.json');
 const DATA_PATH = path.join(__dirname, 'data.json');
 const CRED_PATH = path.join(__dirname, 'platform-credentials.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const THUMBS_DIR = path.join(UPLOADS_DIR, 'thumbs');
+const THUMB_SIZES = [48, 90, 120, 200];
 const BACKUPS_DIR = path.join(__dirname, 'backups');
 
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(THUMBS_DIR)) fs.mkdirSync(THUMBS_DIR, { recursive: true });
 if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
 
 // ─── Auth Middleware ─────────────────────────────────────────────
@@ -75,6 +79,34 @@ function scheduleBackup() {
 setInterval(createBackup, BACKUP_INTERVAL);
 setTimeout(createBackup, 10000); // first backup after 10s
 
+// ─── Image Processing ────────────────────────────────────────────
+async function processImage(filePath, baseName) {
+  const name = baseName.replace(/\.\w+$/, '') + '.webp';
+  const outPath = path.join(UPLOADS_DIR, name);
+  try {
+    await sharp(filePath)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 82, effort: 4 })
+      .toFile(outPath);
+    const stat = fs.statSync(outPath);
+    const thumbs = {};
+    for (const size of THUMB_SIZES) {
+      const tn = `${size}_${name}`;
+      await sharp(filePath)
+        .resize(size, size, { fit: 'cover' })
+        .webp({ quality: 72, effort: 3 })
+        .toFile(path.join(THUMBS_DIR, tn));
+      thumbs[size] = `/uploads/thumbs/${tn}`;
+    }
+    try { fs.unlinkSync(filePath); } catch {}
+    return { url: `/uploads/${name}`, filename: name, size: stat.size, thumbs };
+  } catch (err) {
+    console.warn('Image processing failed, keeping original:', err.message);
+    const origName = path.basename(filePath);
+    return { url: `/uploads/${origName}`, filename: origName, size: fs.statSync(filePath).size, thumbs: {} };
+  }
+}
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename: (_req, file, cb) => {
@@ -84,7 +116,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 1 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype);
     cb(ok ? null : new Error('Formato no soportado'), ok);
@@ -415,52 +447,166 @@ app.post('/api/calculate/costing', (req, res) => {
 // ─── API: Image Upload ──────────────────────────────────────────
 // POST /api/upload/image
 app.post('/api/upload/image', (req, res) => {
-  upload.single('image')(req, res, (err) => {
+  upload.single('image')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError) return res.status(400).json({ error: 'Archivo muy grande (max 1MB)' });
       return res.status(400).json({ error: err.message });
     }
     if (!req.file) return res.status(400).json({ error: 'No se envió ninguna imagen' });
-    const url = `/uploads/${req.file.filename}`;
-    res.json({ ok: true, url, filename: req.file.filename });
+    try {
+      const result = await processImage(req.file.path, req.file.filename);
+      res.json({ ok: true, ...result });
+    } catch (e) {
+      res.status(500).json({ error: 'Error al procesar imagen: ' + e.message });
+    }
   });
 });
 
 // POST /api/upload/image-base64 — accept base64 images (migration)
-app.post('/api/upload/image-base64', express.json({ limit: '5mb' }), (req, res) => {
+app.post('/api/upload/image-base64', express.json({ limit: '5mb' }), async (req, res) => {
   const { base64, filename } = req.body;
   if (!base64) return res.status(400).json({ error: 'base64 requerido' });
   const matches = base64.match(/^data:image\/(\w+);base64,(.+)$/);
   if (!matches) return res.status(400).json({ error: 'Formato base64 inválido' });
   const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-  const name = (filename || Date.now() + '_' + crypto.randomBytes(4).toString('hex')) + '.' + ext;
-  const cleanName = name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const filePath = path.join(UPLOADS_DIR, cleanName);
-  fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
-  const url = `/uploads/${cleanName}`;
-  res.json({ ok: true, url, filename: cleanName });
+  const rawName = (filename || Date.now() + '_' + crypto.randomBytes(4).toString('hex')) + '.' + ext;
+  const cleanName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const tmpPath = path.join(UPLOADS_DIR, cleanName);
+  fs.writeFileSync(tmpPath, Buffer.from(matches[2], 'base64'));
+  try {
+    const result = await processImage(tmpPath, cleanName);
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al procesar imagen: ' + e.message });
+  }
 });
 
 // POST /api/migrate/images — migrate multiple base64 images at once
-app.post('/api/migrate/images', express.json({ limit: '50mb' }), (req, res) => {
+app.post('/api/migrate/images', express.json({ limit: '50mb' }), async (req, res) => {
   const { images } = req.body;
   if (!Array.isArray(images)) return res.status(400).json({ error: 'Se requiere array "images"' });
-  const results = images.map((img, idx) => {
-    if (!img.data || !img.data.startsWith('data:image')) return { index: idx, url: img.data, migrated: false, error: 'No es base64' };
-    const matches = img.data.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!matches) return { index: idx, url: img.data, migrated: false, error: 'Formato inválido' };
-    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-    const name = (img.name || 'img_' + Date.now() + '_' + idx) + '.' + ext;
-    const cleanName = name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const filePath = path.join(UPLOADS_DIR, cleanName);
-    try {
-      fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
-      return { index: idx, url: `/uploads/${cleanName}`, migrated: true, field: img.field };
-    } catch (e) {
-      return { index: idx, url: img.data, migrated: false, error: e.message };
+  const results = [];
+  for (let idx = 0; idx < images.length; idx++) {
+    const img = images[idx];
+    if (!img.data || !img.data.startsWith('data:image')) {
+      results.push({ index: idx, url: img.data, migrated: false, error: 'No es base64' });
+      continue;
     }
-  });
+    const matches = img.data.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) {
+      results.push({ index: idx, url: img.data, migrated: false, error: 'Formato inválido' });
+      continue;
+    }
+    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    const rawName = (img.name || 'img_' + Date.now() + '_' + idx) + '.' + ext;
+    const cleanName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const tmpPath = path.join(UPLOADS_DIR, cleanName);
+    try {
+      fs.writeFileSync(tmpPath, Buffer.from(matches[2], 'base64'));
+      const processed = await processImage(tmpPath, cleanName);
+      results.push({ index: idx, url: processed.url, migrated: true, field: img.field, thumbs: processed.thumbs });
+    } catch (e) {
+      results.push({ index: idx, url: img.data, migrated: false, error: e.message });
+    }
+  }
   res.json({ ok: true, migrated: results.filter(r => r.migrated).length, failed: results.filter(r => !r.migrated).length, results });
+});
+
+// ─── API: Image Management ──────────────────────────────────────
+
+// GET /api/images — list all uploaded images with usage info
+app.get('/api/images', (req, res) => {
+  try {
+    const files = fs.readdirSync(UPLOADS_DIR).filter(f => {
+      if (f === 'thumbs' || f === '.gitkeep') return false;
+      return /\.(jpg|jpeg|png|webp|gif)$/i.test(f);
+    });
+    const data = getData();
+    const platillos = data.platillos || [];
+    const configTienda = data.configTienda || {};
+
+    const images = files.map(f => {
+      const fp = path.join(UPLOADS_DIR, f);
+      let stat;
+      try { stat = fs.statSync(fp); } catch { return null; }
+      if (!stat.isFile()) return null;
+      const url = `/uploads/${f}`;
+      const thumbSizes = {};
+      for (const s of THUMB_SIZES) {
+        const tn = path.join(THUMBS_DIR, `${s}_${f}`);
+        if (fs.existsSync(tn)) thumbSizes[s] = `/uploads/thumbs/${s}_${f}`;
+      }
+      const usedBy = [];
+      platillos.forEach(p => { if (p.image === url) usedBy.push({ type: 'platillo', id: p.id, name: p.name }); });
+      if (configTienda.logo === url) usedBy.push({ type: 'store', id: 'logo', name: 'Logo de tienda' });
+      if (configTienda.banner === url) usedBy.push({ type: 'store', id: 'banner', name: 'Banner de tienda' });
+      return {
+        filename: f,
+        url,
+        size: stat.size,
+        created: stat.mtime,
+        webp: f.endsWith('.webp'),
+        thumbs: thumbSizes,
+        usedBy
+      };
+    }).filter(Boolean);
+
+    images.sort((a, b) => new Date(b.created) - new Date(a.created));
+    res.json({ ok: true, count: images.length, images });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// DELETE /api/images/:filename — delete an image and its thumbnails
+app.delete('/api/images/:filename', (req, res) => {
+  const { filename } = req.params;
+  const clean = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fp = path.join(UPLOADS_DIR, clean);
+  if (!fs.existsSync(fp)) return res.status(404).json({ ok: false, error: 'Archivo no encontrado' });
+
+  // Remove thumbnails
+  for (const s of THUMB_SIZES) {
+    const tn = path.join(THUMBS_DIR, `${s}_${clean}`);
+    try { fs.unlinkSync(tn); } catch {}
+  }
+
+  try { fs.unlinkSync(fp); } catch (e) { return res.status(500).json({ ok: false, error: e.message }); }
+  res.json({ ok: true, message: `Imagen ${clean} eliminada` });
+});
+
+// POST /api/images/cleanup — remove orphaned images (not referenced by any dish or store config)
+app.post('/api/images/cleanup', (req, res) => {
+  try {
+    const data = getData();
+    const platillos = data.platillos || [];
+    const configTienda = data.configTienda || {};
+    const referenced = new Set();
+    platillos.forEach(p => { if (p.image) referenced.add(p.image); });
+    if (configTienda.logo) referenced.add(configTienda.logo);
+    if (configTienda.banner) referenced.add(configTienda.banner);
+
+    const files = fs.readdirSync(UPLOADS_DIR).filter(f => {
+      if (f === 'thumbs' || f === '.gitkeep') return false;
+      return /\.(jpg|jpeg|png|webp|gif)$/i.test(f);
+    });
+
+    const removed = [];
+    for (const f of files) {
+      const url = `/uploads/${f}`;
+      if (!referenced.has(url)) {
+        const fp = path.join(UPLOADS_DIR, f);
+        try { fs.unlinkSync(fp); removed.push(f); } catch {}
+        for (const s of THUMB_SIZES) {
+          const tn = path.join(THUMBS_DIR, `${s}_${f}`);
+          try { fs.unlinkSync(tn); } catch {}
+        }
+      }
+    }
+    res.json({ ok: true, removed: removed.length, files: removed });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // ─── API: Backups ───────────────────────────────────────────────
