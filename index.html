@@ -457,7 +457,7 @@ textarea{resize:vertical;min-height:60px}
 </div>
 
 <!-- MODAL: Ingrediente -->
-<div class="modal-overlay" id="modal-ingrediente"><div class="modal">
+<div class="modal-overlay" id="modal-ingrediente" onclick="if(event.target===this)cerrarModal('modal-ingrediente')"><div class="modal">
 <div class="modal-header"><h2 id="modal-ingrediente-title">Nuevo Ingrediente</h2><button class="modal-close" onclick="cerrarModal('modal-ingrediente')">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" id="ingrediente-id">
@@ -477,7 +477,7 @@ textarea{resize:vertical;min-height:60px}
 </div></div>
 
 <!-- MODAL: Platillo -->
-<div class="modal-overlay" id="modal-platillo"><div class="modal">
+<div class="modal-overlay" id="modal-platillo" onclick="if(event.target===this)cerrarModal('modal-platillo')"><div class="modal">
 <div class="modal-header"><h2 id="modal-platillo-title">Nuevo Platillo</h2><button class="modal-close" onclick="cerrarModal('modal-platillo')">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" id="platillo-id">
@@ -511,7 +511,7 @@ textarea{resize:vertical;min-height:60px}
 </div></div>
 
 <!-- MODAL: API Platform -->
-<div class="modal-overlay" id="modal-api"><div class="modal">
+<div class="modal-overlay" id="modal-api" onclick="if(event.target===this)cerrarModal('modal-api')"><div class="modal">
 <div class="modal-header"><h2 id="modal-api-title">🔌 Configurar API</h2><button class="modal-close" onclick="cerrarModal('modal-api')">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" id="api-index">
@@ -534,7 +534,7 @@ textarea{resize:vertical;min-height:60px}
 </div></div>
 
 <!-- MODAL: Gasto Fijo -->
-<div class="modal-overlay" id="modal-gasto"><div class="modal">
+<div class="modal-overlay" id="modal-gasto" onclick="if(event.target===this)cerrarModal('modal-gasto')"><div class="modal">
 <div class="modal-header"><h2 id="modal-gasto-title">Nuevo Gasto Fijo</h2><button class="modal-close" onclick="cerrarModal('modal-gasto')">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" id="gasto-id">
@@ -693,6 +693,17 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
   });
 });
 
+// ========== MODALS ==========
+function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    ['modal-ingrediente','modal-platillo','modal-api','modal-gasto'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.classList.contains('active')) el.classList.remove('active');
+    });
+  }
+});
+
 // ========== INGREDIENTES ==========
 function renderIngredientes(){const c=document.getElementById('ingredientes-table-container');if(!ingredientes.length){c.innerHTML='<p class="empty-state"><div class="icon">🥕</div><p>No hay ingredientes.</p></p>';return}
 c.innerHTML=`<table><thead><tr><th>Nombre</th><th>Unidad</th><th>Precio compra</th><th>Cant.</th><th>Unidad compra</th><th>Rend.</th><th class="text-right">Costo x unidad</th><th class="text-center">Acción</th></tr></thead><tbody>${ingredientes.map(i=>{const cu=calcularCostoUnitario(i);return `<tr><td class="fw-bold">${escHtml(i.name)}</td><td>${i.recipeUnit}</td><td>$${i.purchasePrice.toFixed(2)}</td><td>${i.purchaseQuantity}</td><td>${i.purchaseUnit}</td><td>${i.yield}%</td><td class="text-right fw-bold">${cu!==null?'$'+cu.toFixed(4):'—'}</td><td class="text-center"><button class="btn btn-sm btn-secondary" onclick="editarIngrediente('${i.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarIngrediente('${i.id}')">🗑️</button></td></tr>`}).join('')}</tbody></table>`;}
@@ -741,7 +752,7 @@ function eliminarPlatillo(id){if(!confirm('¿Eliminar este platillo?'))return;pl
 function calcularCostoPlatillo(p){let t=0;for(const item of p.ingredients){const ing=ingredientes.find(i=>i.id===item.ingredientId);if(ing&&item.quantity>0){const cu=calcularCostoUnitario(ing);if(cu!==null)t+=cu*item.quantity}}return t}
 
 // ========== CÁLCULOS PLATAFORMAS ==========
-function calcularNetoPlataforma(precio,comisionPct){const cfg=configPlataformas,it=cfg.ivaTasa/100,c=comisionPct/100,s=precio,iv=s*it,tc=s+iv,cm=s*c,ic=cm*it,ir=cfg.tieneRFC?(cfg.isrRetencion/100)*s:0.20*s,ivr=cfg.tieneRFC?(cfg.ivaRetencion/100)*iv:iv,net=tc-cm-ic-ir-ivr;return{sub:s,iv,iv:t,c:cm,ic,ir,ivr,net,cc:cm+ic,ct:ir+ivr,te:((s-net)/s)*100}}
+function calcularNetoPlataforma(precio,comisionPct){const cfg=configPlataformas,it=cfg.ivaTasa/100,c=comisionPct/100,s=precio,iva=s*it,tc=s+iva,cm=s*c,ic=cm*it,ir=cfg.tieneRFC?(cfg.isrRetencion/100)*s:0.20*s,ivr=cfg.tieneRFC?(cfg.ivaRetencion/100)*iva:iva,net=tc-cm-ic-ir-ivr;return{sub:s,iva,c:cm,ic,ir,ivr,net,cc:cm+ic,ct:ir+ivr,te:((s-net)/s)*100}}
 
 // ========== COSTEO ==========
 async function renderCosteo(){const mg=parseInt(document.getElementById('margen-ganancia').value)||30,cnt=document.getElementById('costeo-cards'),sum=document.getElementById('costeo-summary');if(!platillos.length){sum.innerHTML='';cnt.innerHTML='<div class="card"><p class="empty-state"><div class="icon">💰</div><p>Sin platillos.</p></div>';return}
@@ -750,7 +761,7 @@ let cg=0,co=0,html='';const pa=configPlataformas.plataformas.filter(p=>p.activa)
 // Fetch costing data from server
 let costingResult=null;
 try{const bu=getBackendUrl();const res=await fetch(bu+'/api/calculate/costing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({margenGanancia:mg})});const d=await res.json();if(d.ok)costingResult=d}catch(e){}
-const dishes=costingResult?costingResult.dishes:platillos.map(p=>{const ct=calcularCostoPlatillo(p),po=p.portions||1,cp=po>0?ct/po:0,psg=mg>0?cp/(1-mg/100):cp;return{id:p.id,name:p.name,icon:p.icon||'🍽️',description:p.description,portions:po,costo:cp,precioVenta:psg,recipeCount:p.recipe?.length||0,ingredients:(p.recipe||[]).map(ri=>{const i=ingredientes.find(x=>x.id===ri.ingredientId);if(!i)return null;const cu=calcularCostoUnitario(i);return{name:i.name,qty:ri.qty,unit:i.recipeUnit,cost:cu!==null?cu*ri.quantity:0,pct:ct>0?((cu!==null?cu*ri.quantity:0)/ct*100):0}}).filter(Boolean),platforms:pa.map(pl=>{const ca=calcularNetoPlataforma(psg,pl.comision),gn=ca.net-cp,mn=ca.net>0?(gn/ca.net)*100:0;return{id:pl.id,name:pl.nombre,icon:pl.icon,comision:pl.comision,c:ca.c,ic:ca.ic,ir:ca.ir,ivr:ca.ivr,neto:ca.net,ganancia:gn,margen:mn}})}})
+const dishes=costingResult?costingResult.dishes:platillos.map(p=>{const ct=calcularCostoPlatillo(p),po=p.portions||1,cp=po>0?ct/po:0,psg=mg>0?cp/(1-mg/100):cp;const receta=p.ingredients||p.recipe||[];return{id:p.id,name:p.name,icon:p.icon||'🍽️',description:p.description,portions:po,costo:cp,precioVenta:psg,recipeCount:receta.length,ingredients:receta.map(ri=>{const i=ingredientes.find(x=>x.id===ri.ingredientId);if(!i)return null;const qty=ri.quantity||ri.qty||0;const cu=calcularCostoUnitario(i);return{name:i.name,qty,unit:i.recipeUnit||i.unit||'g',cost:cu!==null?cu*qty:0,pct:ct>0?((cu!==null?cu*qty:0)/ct*100):0}}).filter(Boolean),platforms:pa.map(pl=>{const ca=calcularNetoPlataforma(psg,pl.comision),gn=ca.net-cp,mn=ca.net>0?(gn/ca.net)*100:0;return{id:pl.id,name:pl.nombre,icon:pl.icon,comision:pl.comision,c:ca.c,ic:ca.ic,ir:ca.ir,ivr:ca.ivr,neto:ca.net,ganancia:gn,margen:mn}})}})
 for(const d of dishes){const cp=d.costo,psg=d.precioVenta,po=d.portions,ct=cp*po,gn=psg-cp;cg+=ct;co++
 let ph=pa.length?`<div style="margin-top:1rem;padding-top:1rem;border-top:2px dashed var(--border)"><p style="font-size:.85rem;font-weight:600;margin-bottom:.5rem">📱 Comparativa (precio: <strong>$${psg.toFixed(2)}</strong>)</p><div class="comparison-grid"><div style="background:var(--bg);text-align:left"><div class="net-label">CONCEPTO</div><div style="font-size:.7rem;color:var(--text-light);line-height:1.8">Comisión<br>IVA com.<br>Ret. ISR<br>Ret. IVA<br><strong>Neto</strong><br><strong>Ganancia</strong><br><strong>Margen</strong></div></div>${d.platforms.map(pl=>`<div><div class="net-label" style="font-weight:700;font-size:.8rem">${pl.icon} ${pl.name}</div><div style="font-size:.7rem;color:var(--text-light);line-height:1.8">-$${(pl.c||0).toFixed(2)}<br>-$${(pl.ic||0).toFixed(2)}<br>-$${(pl.ir||0).toFixed(2)}<br>-$${(pl.ivr||0).toFixed(2)}<br><strong style="font-size:.85rem;color:${(pl.neto||0)>cp?'#27ae60':'#e74c3c'}">$${(pl.neto||0).toFixed(2)}</strong><br><strong style="font-size:.8rem;color:${(pl.ganancia||0)>0?'#27ae60':'#e74c3c'}">$${(pl.ganancia||0).toFixed(2)}</strong><br><strong style="font-size:.8rem;color:${(pl.margen||0)>0?'#27ae60':'#e74c3c'}">${(pl.margen||0).toFixed(1)}%</strong></div></div>`).join('')}</div></div>`:''
 html+=`<div class="card"><div class="flex-between"><div><h3 style="margin:0">${escHtml(d.name)}</h3>${d.description?'<p class="text-muted" style="font-size:.85rem;margin-top:.25rem">'+escHtml(d.description)+'</p>':''}<p style="font-size:.8rem;color:var(--text-light);margin-top:.25rem">${po} porción(es)</p></div><div style="text-align:right"><div style="font-size:1.1rem;font-weight:700;color:var(--primary)">$${cp.toFixed(2)}</div><div style="font-size:.75rem;color:var(--text-light)">costo x porción</div></div></div>
