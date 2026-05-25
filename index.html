@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CosteApp - Restaurante</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --primary: #c0392b; --primary-dark: #a93226; --secondary: #2c3e50; --accent: #e67e22;
@@ -29,6 +30,8 @@ header p{font-size:.85rem;opacity:.8}
 .btn{padding:.6rem 1.2rem;border:none;border-radius:var(--radius);font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:.5rem;font-family:inherit}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover{background:var(--primary-dark)}
+.btn-accent{background:var(--secondary);color:#fff}
+.btn-accent:hover{background:#2a9d8f}
 .btn-secondary{background:var(--secondary);color:#fff}
 .btn-secondary:hover{background:#1a252f}
 .btn-accent{background:var(--accent);color:#fff}
@@ -294,7 +297,7 @@ textarea{resize:vertical;min-height:60px}
 
 <!-- TAB: INGREDIENTES -->
 <div class="tab-content active" id="tab-ingredientes">
-<div class="flex-between mb-1"><h2>Ingredientes</h2><button class="btn btn-primary" onclick="abrirModalIngrediente()">+ Nuevo</button></div>
+<div class="flex-between mb-1"><h2>Ingredientes</h2><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn btn-primary" onclick="abrirModalIngrediente()">+ Nuevo</button><button class="btn btn-accent" onclick="abrirModalImportarIngredientes()">📥 Carga masiva</button></div></div>
 <div class="card"><div id="ingredientes-table-container"></div></div>
 </div>
 
@@ -474,6 +477,26 @@ textarea{resize:vertical;min-height:60px}
 </div>
 </div>
 <div class="modal-footer"><button class="btn btn-secondary" onclick="cerrarModal('modal-ingrediente')">Cancelar</button><button class="btn btn-primary" onclick="guardarIngrediente()">Guardar</button></div>
+</div></div>
+
+<!-- MODAL: Importar Ingredientes -->
+<div class="modal-overlay" id="modal-importar-ingredientes" onclick="if(event.target===this)cerrarModal('modal-importar-ingredientes')"><div class="modal" style="max-width:800px">
+<div class="modal-header"><h2>📥 Carga masiva de ingredientes</h2><button class="modal-close" onclick="cerrarModal('modal-importar-ingredientes')">&times;</button></div>
+<div class="modal-body">
+<p style="font-size:.9rem;color:var(--text-light);margin-bottom:1rem">Descarga la plantilla, llénala en Excel/Google Sheets y súbela. Se importarán todos los ingredientes del archivo.</p>
+<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
+<button class="btn btn-secondary" onclick="descargarPlantillaIngredientes()">📄 Descargar plantilla</button>
+<label class="btn btn-primary" style="cursor:pointer">📂 Subir archivo<input type="file" id="import-ingredientes-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="procesarArchivoIngredientes(this)"></label>
+</div>
+<div id="import-ingredientes-preview" style="max-height:400px;overflow:auto;font-size:.85rem"></div>
+<div id="import-ingredientes-actions" style="display:none;margin-top:1rem" class="flex-between">
+<span id="import-ingredientes-count" style="font-weight:700;color:var(--secondary)"></span>
+<div style="display:flex;gap:.5rem">
+<button class="btn btn-secondary" onclick="cerrarModal('modal-importar-ingredientes')">Cancelar</button>
+<button class="btn btn-success" onclick="confirmarImportarIngredientes()">✅ Importar</button>
+</div>
+</div>
+</div>
 </div></div>
 
 <!-- MODAL: Platillo -->
@@ -697,7 +720,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
 function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    ['modal-ingrediente','modal-platillo','modal-api','modal-gasto'].forEach(id => {
+    ['modal-ingrediente','modal-platillo','modal-api','modal-gasto','modal-importar-ingredientes'].forEach(id => {
       const el = document.getElementById(id);
       if (el && el.classList.contains('active')) el.classList.remove('active');
     });
@@ -717,6 +740,129 @@ document.getElementById('ing-precio').addEventListener('input',actualizarVistaPr
 document.getElementById('ing-cantidad').addEventListener('input',actualizarVistaPreviaCosto);
 document.getElementById('ing-purchase-unit').addEventListener('change',actualizarVistaPreviaCosto);
 document.getElementById('ing-rendimiento').addEventListener('input',actualizarVistaPreviaCosto);
+
+// ========== IMPORT MASIVO INGREDIENTES ==========
+var importIngredientesData = [];
+
+function descargarPlantillaIngredientes() {
+  var wb = XLSX.utils.book_new();
+  var data = [
+    ['Nombre', 'Unidad receta', 'Precio compra', 'Cantidad compra', 'Unidad compra', 'Rendimiento %'],
+    ['Pechuga de pollo', 'g', '89.00', '1', 'kg', '100'],
+    ['Aceite de oliva', 'ml', '149.00', '1', 'L', '100'],
+    ['Huevo', 'unidad', '35.00', '30', 'unidad', '95']
+  ];
+  var ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:22},{wch:15},{wch:14},{wch:16},{wch:15},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Ingredientes');
+  XLSX.writeFile(wb, 'plantilla_ingredientes.xlsx');
+}
+
+function abrirModalImportarIngredientes() {
+  importIngredientesData = [];
+  document.getElementById('import-ingredientes-preview').innerHTML = '';
+  document.getElementById('import-ingredientes-actions').style.display = 'none';
+  document.getElementById('import-ingredientes-file').value = '';
+  document.getElementById('modal-importar-ingredientes').classList.add('active');
+}
+
+function procesarArchivoIngredientes(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var workbook = XLSX.read(data, {type:'array', cellDates:true, dateNF:'yyyy-mm-dd'});
+      var sheet = workbook.Sheets[workbook.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+      parseIngredientesRows(rows);
+    } catch(err) {
+      alert('Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseIngredientesRows(rows) {
+  var preview = document.getElementById('import-ingredientes-preview');
+  var actions = document.getElementById('import-ingredientes-actions');
+  var count = document.getElementById('import-ingredientes-count');
+
+  if (rows.length < 2) {
+    preview.innerHTML = '<p style="color:var(--danger)">El archivo está vacío o no tiene datos.</p>';
+    actions.style.display = 'none';
+    return;
+  }
+
+  var header = rows[0].map(function(h) { return String(h).trim().toLowerCase(); });
+  var expectedCols = ['nombre','unidad receta','precio compra','cantidad compra','unidad compra','rendimiento %'];
+  var colMap = {};
+  expectedCols.forEach(function(col, idx) {
+    var found = header.indexOf(col);
+    colMap[col] = found > -1 ? found : null;
+  });
+
+  var missing = expectedCols.filter(function(c) { return colMap[c] === null; });
+  if (missing.length) {
+    preview.innerHTML = '<p style="color:var(--danger)">Columnas faltantes: <strong>' + missing.join(', ') + '</strong>. Descarga la plantilla para ver el formato correcto.</p>';
+    actions.style.display = 'none';
+    return;
+  }
+
+  var parsed = [];
+  var errors = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    var name = String(row[colMap['nombre']] || '').trim();
+    if (!name) continue;
+    var recipeUnit = String(row[colMap['unidad receta']] || '').trim() || 'g';
+    var purchasePrice = parseFloat(String(row[colMap['precio compra']] || '').replace(/[^0-9.,-]/g,'').replace(',','.')) || 0;
+    var purchaseQty = parseFloat(String(row[colMap['cantidad compra']] || '').replace(/[^0-9.,-]/g,'').replace(',','.')) || 1;
+    var purchaseUnit = String(row[colMap['unidad compra']] || '').trim() || 'kg';
+    var yieldPct = parseInt(String(row[colMap['rendimiento %']] || '').replace(/[^0-9]/g,'')) || 100;
+    if (purchasePrice <= 0) { errors.push('Fila ' + (i+1) + ': "' + name + '" tiene precio inválido.'); continue; }
+    parsed.push({ name: name, recipeUnit: recipeUnit, purchasePrice: purchasePrice, purchaseQuantity: purchaseQty, purchaseUnit: purchaseUnit, yield: yieldPct });
+  }
+
+  importIngredientesData = parsed;
+
+  if (!parsed.length) {
+    preview.innerHTML = '<p style="color:var(--danger)">No se encontraron ingredientes válidos.' + (errors.length ? '<br>' + errors.join('<br>') : '') + '</p>';
+    actions.style.display = 'none';
+    return;
+  }
+
+  var html = '<p style="font-weight:700;margin-bottom:.5rem">Vista previa (' + parsed.length + ' ingredientes):</p>';
+  html += '<table><thead><tr><th>#</th><th>Nombre</th><th>Unidad</th><th>Precio compra</th><th>Cant.</th><th>Unidad compra</th><th>Rend.</th></tr></thead><tbody>';
+  parsed.forEach(function(p, idx) {
+    html += '<tr><td>' + (idx + 1) + '</td><td class="fw-bold">' + escHtml(p.name) + '</td><td>' + p.recipeUnit + '</td><td>$' + p.purchasePrice.toFixed(2) + '</td><td>' + p.purchaseQuantity + '</td><td>' + p.purchaseUnit + '</td><td>' + p.yield + '%</td></tr>';
+  });
+  html += '</tbody></table>';
+  if (errors.length) html += '<p style="color:var(--warning);font-size:.85rem;margin-top:.5rem">' + errors.length + ' filas omitidas por errores.</p>';
+
+  preview.innerHTML = html;
+  count.textContent = 'Se importarán ' + parsed.length + ' ingredientes nuevos.';
+  actions.style.display = 'flex';
+}
+
+function confirmarImportarIngredientes() {
+  if (!importIngredientesData.length) return;
+  var added = 0;
+  importIngredientesData.forEach(function(item) {
+    var exists = ingredientes.some(function(i) { return i.name.toLowerCase() === item.name.toLowerCase(); });
+    if (!exists) {
+      item.id = 'ing_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+      ingredientes.push(item);
+      added++;
+    }
+  });
+  importIngredientesData = [];
+  guardarState();
+  renderIngredientes();
+  cerrarModal('modal-importar-ingredientes');
+  if (added > 0) alert('✅ Se importaron ' + added + ' ingredientes correctamente.' + (added < importIngredientesData.length ? ' (' + (importIngredientesData.length - added) + ' duplicados omitidos)' : ''));
+}
 
 // ========== PLATILLOS ==========
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
