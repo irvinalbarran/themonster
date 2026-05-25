@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CosteApp - Restaurante</title>
+<style>
+:root {
+  --primary: #c0392b; --primary-dark: #a93226; --secondary: #2c3e50; --accent: #e67e22;
+  --bg: #f8f5f0; --card: #ffffff; --text: #2c3e50; --text-light: #7f8c8d;
+  --border: #dcd5cc; --shadow: 0 2px 8px rgba(0,0,0,.08); --radius: 8px;
+  --rappi: #ff3b5c; --uber: #000000; --didi: #ff8000;
+  --store-primary: #c0392b; --store-bg: #f8f5f0; --store-card: #ffffff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+body.storefront-active{overflow:hidden}
+header{background:linear-gradient(135deg,var(--secondary),#1a252f);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+header h1{font-size:1.5rem;font-weight:700}
+header h1 span{color:var(--accent)}
+header p{font-size:.85rem;opacity:.8}
+.tabs{display:flex;background:var(--card);border-bottom:2px solid var(--border);padding:0 2rem;position:sticky;top:0;z-index:10;overflow-x:auto}
+.tab-btn{padding:.85rem 1.5rem;border:none;background:none;font-size:.95rem;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:3px solid transparent;transition:.2s;white-space:nowrap;font-family:inherit}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-content{display:none;padding:2rem;max-width:1200px;margin:0 auto}
+.tab-content.active{display:block}
+.header-actions{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.btn{padding:.6rem 1.2rem;border:none;border-radius:var(--radius);font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:.5rem;font-family:inherit}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-secondary{background:var(--secondary);color:#fff}
+.btn-secondary:hover{background:#1a252f}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:#d35400}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-danger:hover{background:#c0392b}
+.btn-outline{background:transparent;color:var(--secondary);border:2px solid var(--secondary)}
+.btn-outline:hover{background:var(--secondary);color:#fff}
+.btn-sm{padding:.4rem .8rem;font-size:.8rem}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#1e8449}
+.btn-store{background:var(--store-primary);color:#fff;border-radius:50px;padding:.75rem 2rem;font-size:1rem;width:100%}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem;margin-bottom:1.5rem}
+.card h3{font-size:1.1rem;margin-bottom:1rem;color:var(--secondary)}
+.card-dash{padding:1.25rem;border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);text-align:center}
+.card-dash .dash-value{font-size:2rem;font-weight:800}
+.card-dash .dash-label{font-size:.8rem;color:var(--text-light);margin-top:.15rem}
+table{width:100%;border-collapse:collapse}
+th,td{padding:.75rem .5rem;text-align:left;border-bottom:1px solid var(--border);font-size:.9rem}
+th{font-weight:600;color:var(--text-light);font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+tr:hover td{background:#faf8f5}
+.text-right{text-align:right}
+.text-center{text-align:center}
+.text-success{color:#27ae60}
+.text-danger{color:#e74c3c}
+.text-primary{color:var(--primary)}
+.text-muted{color:var(--text-light)}
+.fw-bold{font-weight:700}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:.85rem;font-weight:600;margin-bottom:.35rem;color:var(--secondary)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.form-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem}
+input,select,textarea{width:100%;padding:.6rem .8rem;border:2px solid var(--border);border-radius:var(--radius);font-size:.9rem;background:#fff;color:var(--text);transition:.2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
+textarea{resize:vertical;min-height:60px}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100;justify-content:center;align-items:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--card);border-radius:var(--radius);width:90%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-header h2{font-size:1.2rem}
+.modal-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-light);padding:.25rem}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:1.5rem}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.75rem}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text-light)}
+.empty-state p{font-size:1.1rem;margin-bottom:.5rem}
+.empty-state .icon{font-size:3rem;margin-bottom:1rem;opacity:.4}
+.badge{display:inline-block;padding:.2rem .5rem;border-radius:20px;font-size:.75rem;font-weight:600}
+.badge-primary{background:#fde8e8;color:var(--primary)}
+.badge-success{background:#e8f8f0;color:#27ae60}
+.badge-warning{background:#fef5e7;color:#e67e22}
+.badge-dark{background:#e8eaed;color:#2c3e50}
+.badge-info{background:#e8f4fd;color:#2980b9}
+.cost-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.cost-summary .stat-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem;text-align:center}
+.cost-summary .stat-card .value{font-size:1.8rem;font-weight:700;color:var(--primary)}
+.cost-summary .stat-card .label{font-size:.8rem;color:var(--text-light);margin-top:.25rem}
+.cost-summary .stat-card .sub{font-size:.85rem;color:var(--text);margin-top:.5rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.mb-1{margin-bottom:1rem}
+.mt-1{margin-top:1rem}
+.flex{display:flex}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.gap-1{gap:1rem}
+.w-full{width:100%}
+.ingredient-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem}
+.ingredient-row select,.ingredient-row input{flex:1}
+.ingredient-row .btn{flex-shrink:0}
+.cost-breakdown{margin-top:1rem}
+.toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;cursor:pointer;transition:.3s}
+.toggle .slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--primary)}
+.toggle input:checked+.slider::before{transform:translateX(20px)}
+.platform-row.rappi{border-left:4px solid var(--rappi)}
+.platform-row.uber{border-left:4px solid var(--uber)}
+.platform-row.didi{border-left:4px solid var(--didi)}
+.comparison-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:.75rem}
+.comparison-grid>div{padding:.6rem;border-radius:6px;text-align:center}
+.comparison-grid .net-label{font-size:.7rem;color:var(--text-light);margin-bottom:.15rem}
+.info-box{padding:.75rem 1rem;border-radius:var(--radius);background:#e8f4fd;border-left:4px solid #3498db;font-size:.85rem;margin-bottom:1rem}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem}
+.pnl-table{font-size:.9rem}
+.pnl-table .net-row td{font-weight:800;font-size:1.1rem;border-top:3px double var(--secondary)}
+.bar-chart .bar-track{height:28px;background:var(--bg);border-radius:14px;overflow:hidden;display:flex;margin-bottom:.35rem}
+.bar-chart .bar-track .seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:600;color:#fff;transition:width .4s}
+.bar-chart .bar-track .seg.ingredientes{background:#e74c3c}
+.bar-chart .bar-track .seg.comision{background:var(--accent)}
+.bar-chart .bar-track .seg.impuestos{background:#3498db}
+.bar-chart .bar-track .seg.gastos{background:#9b59b6}
+.bar-chart .bar-track .seg.publicidad{background:#1abc9c}
+.bar-chart .bar-track .seg.ganancia{background:#27ae60}
+.legend{display:flex;flex-wrap:wrap;gap:.75rem;font-size:.8rem}
+.legend-item{display:flex;align-items:center;gap:.35rem}
+.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.breakeven-box{text-align:center;padding:2rem;background:var(--bg);border-radius:var(--radius);border:2px dashed var(--accent)}
+.breakeven-box .be-value{font-size:2.5rem;font-weight:800;color:var(--primary)}
+.breakeven-box .be-label{font-size:.9rem;color:var(--text-light)}
+.preview-img{width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid var(--border)}
+.preview-img-sm{width:48px;height:48px;object-fit:cover;border-radius:6px}
+.img-upload-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);cursor:pointer;font-size:.85rem;transition:.2s}
+.img-upload-btn:hover{border-color:var(--primary);background:#f0edeb}
+.color-input{width:48px;height:48px;padding:2px;border:2px solid var(--border);border-radius:var(--radius);cursor:pointer}
+.color-input::-webkit-color-swatch-wrapper{padding:0}
+.color-input::-webkit-color-swatch{border:none;border-radius:4px}
+
+/* ===== STOREFRONT ===== */
+.storefront{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:var(--store-bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.storefront.open{display:block}
+.store-banner{width:100%;height:200px;background:var(--store-primary);position:relative;overflow:hidden}
+.store-banner img{width:100%;height:100%;object-fit:cover}
+.store-banner-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:2rem 1rem 1rem}
+.store-banner-overlay .store-name{color:#fff;font-size:1.5rem;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.store-banner-overlay .store-desc{color:rgba(255,255,255,.85);font-size:.85rem;margin-top:.15rem}
+.store-logo{width:64px;height:64px;border-radius:12px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);position:absolute;top:1rem;left:1rem;object-fit:cover;background:#fff}
+.store-close{position:absolute;top:.75rem;right:.75rem;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;font-size:1.2rem;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
+.store-search{padding:.75rem 1rem;position:sticky;top:0;z-index:5;background:var(--store-bg)}
+.store-search input{width:100%;padding:.75rem 1rem;border:none;border-radius:50px;background:var(--store-card);box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:.95rem}
+.store-search input:focus{outline:2px solid var(--store-primary)}
+.store-cats{display:flex;gap:.5rem;padding:0 1rem .75rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.store-cats::-webkit-scrollbar{display:none}
+.cat-chip{padding:.5rem 1.1rem;border-radius:50px;border:2px solid var(--border);background:var(--store-card);font-size:.85rem;font-weight:600;white-space:nowrap;cursor:pointer;transition:.2s;color:var(--text-light);flex-shrink:0}
+.cat-chip.active{background:var(--store-primary);color:#fff;border-color:var(--store-primary)}
+.store-dishes{padding:0 1rem 120px;display:grid;grid-template-columns:1fr;gap:.75rem}
+.store-dish{display:flex;gap:.75rem;background:var(--store-card);border-radius:12px;padding:.75rem;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.2s;cursor:pointer;position:relative;align-items:stretch}
+.store-dish:active{transform:scale(.98)}
+.store-dish-img{width:90px;min-height:90px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--bg)}
+.store-dish-img-placeholder{width:90px;min-height:90px;border-radius:10px;background:linear-gradient(135deg,#f0edeb,#e0d8d0);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:2rem}
+.store-dish-info{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.store-dish-info h4{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:.15rem}
+.store-dish-info .desc{font-size:.8rem;color:var(--text-light);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;margin-bottom:.35rem}
+.store-dish-info .price{font-size:1.1rem;font-weight:800;color:var(--store-primary)}
+.store-dish .add-btn{width:32px;height:32px;border-radius:50%;background:var(--store-primary);color:#fff;border:none;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:flex-end;transition:.2s}
+.store-dish .add-btn:active{transform:scale(.85)}
+.store-dish .qty-control{display:flex;align-items:center;gap:.35rem;align-self:flex-end}
+.store-dish .qty-control button{width:32px;height:32px;border-radius:50%;background:var(--store-card);border:2px solid var(--store-primary);color:var(--store-primary);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.store-dish .qty-control span{font-weight:700;font-size:1rem;color:var(--text);min-width:24px;text-align:center}
+
+/* Cart fab */
+.cart-fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:100;display:none;align-items:center;gap:.5rem;background:var(--store-primary);color:#fff;border:none;border-radius:50px;padding:.75rem 1.25rem;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;font-weight:700;font-size:.9rem;font-family:inherit;transition:.2s}
+.cart-fab.show{display:flex}
+.cart-fab .cart-count{background:#fff;color:var(--store-primary);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800}
+
+/* Cart sheet */
+.cart-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:rgba(0,0,0,.5)}
+.cart-overlay.open{display:block}
+.cart-sheet{position:fixed;bottom:0;left:0;right:0;z-index:201;background:var(--store-card);border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;padding:1.25rem;box-shadow:0 -4px 24px rgba(0,0,0,.12);display:none;animation:slideUp .3s ease}
+.cart-sheet.open{display:block}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.cart-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto .75rem}
+.cart-item{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border)}
+.cart-item:last-child{border-bottom:none}
+.cart-item-img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--bg);flex-shrink:0}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-info .ci-name{font-size:.9rem;font-weight:600}
+.cart-item-info .ci-price{font-size:.8rem;color:var(--text-light)}
+.cart-qty{display:flex;align-items:center;gap:.4rem}
+.cart-qty button{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--store-primary);background:var(--store-card);color:var(--store-primary);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.cart-qty span{font-weight:700;font-size:.9rem;min-width:20px;text-align:center}
+
+/* Checkout */
+.checkout-form{padding:1rem 0}
+.checkout-form .form-group{margin-bottom:.75rem}
+.checkout-form label{font-size:.8rem;font-weight:600;color:var(--text-light);margin-bottom:.2rem}
+.checkout-form input,.checkout-form textarea{padding:.7rem .85rem;border:2px solid var(--border);border-radius:10px;font-size:.9rem;width:100%;font-family:inherit}
+.payment-btn{width:100%;padding:1rem;border:none;border-radius:12px;background:linear-gradient(135deg,#009ee3,#0077b6);color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:.2s;font-family:inherit}
+.payment-btn:hover{opacity:.9}
+.payment-btn:disabled{opacity:.5;cursor:not-allowed}
+.mp-logo{height:24px}
+.payment-success{text-align:center;padding:2rem}
+.payment-success .icon{font-size:3rem;margin-bottom:.75rem}
+.payment-success h3{font-size:1.2rem;margin-bottom:.25rem}
+.payment-success p{color:var(--text-light);font-size:.9rem}
+@media(min-width:640px){
+  .store-dishes{grid-template-columns:1fr 1fr;padding:0 2rem 120px}
+  .store-cats{padding:0 2rem .75rem}
+  .store-search{padding:.75rem 2rem}
+}
+@media(max-width:768px){
+  .form-row,.form-row-3,.form-row-4,.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .tabs{padding:0 .5rem}
+  .tab-btn{padding:.75rem .6rem;font-size:.75rem}
+  .tab-content{padding:1rem}
+  header{padding:.75rem 1rem;flex-direction:column;gap:.5rem;text-align:center}
+  .cost-summary{grid-template-columns:1fr 1fr}
+  .platform-row{grid-template-columns:1fr 1fr;font-size:.85rem}
+  .comparison-grid{grid-template-columns:repeat(2,1fr)}
+  .dash-grid{grid-template-columns:repeat(2,1fr)}
+  .store-banner{height:160px}
+  .store-banner-overlay .store-name{font-size:1.2rem}
+  .cart-fab{bottom:1rem;right:1rem;padding:.6rem 1rem}
+}
+@media print {
+  .tabs,.btn,.header-actions,.storefront{display:none!important}
+  .tab-content{display:block!important;padding:.5rem}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+}
+.api-indicator{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:4px}
+.api-indicator.ok{background:#27ae60}
+.api-indicator.empty{background:#bdc3c7}
+.platform-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:.75rem;align-items:center;padding:.75rem;border-radius:var(--radius);background:var(--bg);margin-bottom:.5rem}
+.api-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.api-modal-grid .full{grid-column:1/-1}
+.api-modal-grid label{font-size:.8rem;font-weight:600;color:var(--text-light);margin-bottom:.2rem;display:block}
+.api-modal-grid input,.api-modal-grid select{padding:.55rem .7rem;border:2px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;width:100%}
+.api-modal-grid input:focus,.api-modal-grid select:focus{outline:none;border-color:var(--primary)}
+.api-key-masked{font-family:monospace;font-size:.85rem;color:var(--text-light);padding:.35rem 0}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.status-dot.connected{background:#27ae60}
+.status-dot.disconnected{background:#e74c3c}
+.status-dot.unknown{background:#f39c12}
+.payment-methods{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.pm-option{display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:.2s;font-size:.9rem}
+.pm-option:hover{border-color:var(--store-primary)}
+.pm-option.active{border-color:var(--store-primary);background:#fef5e7}
+.pm-option input[type="radio"]{width:auto;accent-color:var(--store-primary)}
+.card-form-fields{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;padding:.75rem;background:var(--bg);border-radius:10px;margin-bottom:1rem}
+.card-form-fields .full{grid-column:1/-1}
+.card-form-fields label{font-size:.75rem;font-weight:600;color:var(--text-light);margin-bottom:.15rem}
+.card-form-fields input{padding:.6rem .7rem;border:2px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;width:100%}
+.card-form-fields input:focus{outline:none;border-color:var(--store-primary)}
+.pm-icon{font-size:1.3rem}
+.oxxo-info{text-align:center;padding:1.5rem;background:var(--bg);border-radius:10px;margin-bottom:1rem}
+.oxxo-info .ref{font-size:1.6rem;font-weight:800;letter-spacing:2px;color:var(--secondary);margin:.5rem 0}
+.oxxo-info .barcode{max-width:280px;margin:.75rem auto}
+.oxxo-info .barcode img{width:100%}
+.oxxo-info .steps{font-size:.85rem;color:var(--text-light);margin-top:.5rem}
+.payment-status{text-align:center;padding:2rem}
+.payment-status .icon{font-size:2.5rem;margin-bottom:.5rem}
+.payment-status h3{font-size:1.1rem;margin-bottom:.25rem}
+.payment-status p{font-size:.85rem;color:var(--text-light)}
+</style>
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body>
+
+<header>
+<div>
+<h1><span>Coste</span>App</h1>
+<p>Sistema de gestión restaurantera</p>
+</div>
+<div class="header-actions">
+<span id="sync-status" title="Estado de sincronización" style="font-size:1.2rem;cursor:default">💾</span>
+<button class="btn btn-outline" onclick="exportarDatos()" style="border-color:#ffffff44;color:#fff">📥</button>
+<button class="btn btn-outline" onclick="importarDatos()" style="border-color:#ffffff44;color:#fff">📤</button>
+<button class="btn btn-accent" onclick="abrirTienda()" style="font-size:.8rem">🛒 Ver Tienda</button>
+</div>
+</header>
+
+<div class="tabs" id="tabs">
+<button class="tab-btn active" data-tab="ingredientes">🥕 Ingredientes</button>
+<button class="tab-btn" data-tab="platillos">🍽️ Platillos</button>
+<button class="tab-btn" data-tab="costeo">💰 Costeo</button>
+<button class="tab-btn" data-tab="plataformas">📱 Plataformas</button>
+<button class="tab-btn" data-tab="gastos">🏢 Gastos</button>
+<button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
+<button class="tab-btn" data-tab="tienda">🛒 Tienda Online</button>
+</div>
+
+<!-- TAB: INGREDIENTES -->
+<div class="tab-content active" id="tab-ingredientes">
+<div class="flex-between mb-1"><h2>Ingredientes</h2><button class="btn btn-primary" onclick="abrirModalIngrediente()">+ Nuevo</button></div>
+<div class="card"><div id="ingredientes-table-container"></div></div>
+</div>
+
+<!-- TAB: PLATILLOS -->
+<div class="tab-content" id="tab-platillos">
+<div class="flex-between mb-1"><h2>Platillos</h2><button class="btn btn-primary" onclick="abrirModalPlatillo()">+ Nuevo Platillo</button></div>
+<div id="platillos-list"></div>
+</div>
+
+<!-- TAB: COSTEO -->
+<div class="tab-content" id="tab-costeo">
+<div class="flex-between mb-1"><h2>Costeo</h2></div>
+<div class="cost-summary" id="costeo-summary"></div>
+<div class="card"><div class="flex-between"><h3>Margen</h3><div style="display:flex;align-items:center;gap:.5rem"><label style="font-size:.85rem;font-weight:600">Margen deseado:</label><input type="number" id="margen-ganancia" value="30" min="0" max="100" style="width:70px" onchange="renderCosteo()"><label style="font-size:.85rem">%</label></div></div></div>
+<div id="costeo-cards"></div>
+</div>
+
+<!-- TAB: PLATAFORMAS -->
+<div class="tab-content" id="tab-plataformas">
+<div class="flex-between mb-1"><h2>Plataformas e Impuestos</h2></div>
+<div class="info-box"><strong>Régimen Plataformas Tecnológicas México 2026</strong><br>Personas morales con RFC: retención ISR <strong>2.5%</strong> · retención IVA <strong>50%</strong> (8% efectivo). Sin RFC: 20% ISR + 100% IVA.</div>
+<div class="card">
+<h3>💰 Configuración Fiscal</h3>
+<div class="form-row">
+<div class="form-group"><label>IVA</label><select id="cfg-iva-tasa" onchange="guardarConfigPlataformas();renderCosteo()"><option value="16">16%</option><option value="8">8% frontera</option></select></div>
+<div class="form-group"><label>RFC</label><select id="cfg-tiene-rfc" onchange="guardarConfigPlataformas();renderCosteo()"><option value="1">Sí</option><option value="0">No</option></select></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Ret. ISR</label><input type="number" id="cfg-isr" value="2.5" step="0.1" min="0" max="100" onchange="guardarConfigPlataformas();renderCosteo()"></div>
+<div class="form-group"><label>Ret. IVA</label><input type="number" id="cfg-iva-ret" value="50" step="5" min="0" max="100" onchange="guardarConfigPlataformas();renderCosteo()"></div>
+<div class="form-group"><label>IVA efectivo retenido</label><div style="padding:.6rem .8rem;background:#f8f5f0;border-radius:var(--radius);font-weight:700" id="cfg-iva-ret-efectivo">—</div></div>
+</div>
+</div>
+<div class="card">
+<div class="flex-between mb-1"><h3>📱 Comisiones</h3><button class="btn btn-sm btn-accent" onclick="agregarPlataforma()">+ Añadir</button></div>
+<div id="plataformas-lista"></div>
+</div>
+</div>
+
+<!-- TAB: GASTOS FIJOS -->
+<div class="tab-content" id="tab-gastos">
+<div class="flex-between mb-1"><h2>Gastos Fijos</h2><button class="btn btn-primary" onclick="abrirModalGasto()">+ Nuevo Gasto</button></div>
+<div class="cost-summary" id="gastos-summary"></div>
+<div class="card"><div id="gastos-table-container"></div></div>
+</div>
+
+<!-- TAB: DASHBOARD -->
+<div class="tab-content" id="tab-dashboard">
+<div class="flex-between mb-1"><h2>📊 Dashboard</h2><button class="btn btn-sm btn-secondary" onclick="window.print()">🖨️</button></div>
+<div class="card"><h3>⚙️ Proyección</h3>
+<div class="form-row-4">
+<div class="form-group"><label>Ventas/mes</label><input type="number" id="dash-ventas" value="300" min="0" oninput="renderDashboard()"></div>
+<div class="form-group"><label>Plataforma</label><select id="dash-plataforma" onchange="renderDashboard()"></select></div>
+<div class="form-group"><label>Publicidad/mes</label><input type="number" id="dash-publicidad" value="0" min="0" oninput="renderDashboard()"></div>
+<div class="form-group"><label>Platillo ref.</label><select id="dash-platillo" onchange="renderDashboard()"></select></div>
+</div></div>
+<div id="dashboard-content"></div>
+</div>
+
+<!-- TAB: TIENDA ONLINE -->
+<div class="tab-content" id="tab-tienda">
+<div class="flex-between mb-1"><h2>🛒 Configuración de Tienda Online</h2><button class="btn btn-accent" onclick="abrirTienda()">👁️ Ver Menú Público</button></div>
+<div class="card">
+<h3>🎨 Personalización</h3>
+<div class="form-row-4">
+<div class="form-group"><label>Nombre del restaurante</label><input type="text" id="store-nombre" placeholder="Mi Restaurante" onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Color principal</label><input type="color" id="store-color" class="color-input" value="#c0392b" onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Descripción corta</label><input type="text" id="store-desc" placeholder="Comida tradicional ..." onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Logo</label><div class="img-upload-btn" onclick="document.getElementById('store-logo-input').click()">📷 Subir logo</div><input type="file" id="store-logo-input" accept="image/*" style="display:none" onchange="subirImagenStore('logo', this)"><div id="store-logo-preview" style="margin-top:.35rem"></div></div>
+</div>
+<div class="form-row-4">
+<div class="form-group"><label>Banner</label><div class="img-upload-btn" onclick="document.getElementById('store-banner-input').click()">🖼️ Subir banner</div><input type="file" id="store-banner-input" accept="image/*" style="display:none" onchange="subirImagenStore('banner', this)"><div id="store-banner-preview" style="margin-top:.35rem"></div></div>
+<div class="form-group"><label>Costo de envío</label><input type="number" id="store-envio" value="0" min="0" step="5" onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Pedido mínimo</label><input type="number" id="store-min" value="0" min="0" onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Moneda</label><select id="store-moneda" onchange="guardarConfigTienda()"><option value="MXN">MXN $</option><option value="USD">USD $</option></select></div>
+</div>
+</div>
+<div class="card">
+<h3>💳 Mercado Pago (Checkout API Orders)</h3>
+<div class="info-box"><strong>Nota:</strong> La <strong>Public Key</strong> se guarda localmente. El <strong>Access Token</strong> se envía al backend y se persiste en <code>mp-config.json</code>. <a href="https://www.mercadopago.com.mx/developers" target="_blank">Obtén tus credenciales aquí</a>.</div>
+<div class="form-row">
+<div class="form-group"><label>Public Key</label><input type="text" id="mp-public-key" placeholder="APP_USR-xxxx-..." onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Backend URL</label><input type="text" id="mp-backend-url" placeholder="http://localhost:3001" onchange="guardarConfigTienda()"></div>
+<div class="form-group"><label>Admin Token <small>(si el servidor requiere auth)</small></label>
+<input type="password" id="admin-token" placeholder="Token de administrador" onchange="guardarConfigTienda()" autocomplete="off">
+</div>
+</div>
+<div class="form-row" style="margin-top:.5rem">
+<div class="form-group" style="flex:2"><label>Access Token (servidor)</label>
+<div style="display:flex;gap:.5rem;align-items:center">
+<input type="password" id="mp-access-token" placeholder="APP_USR-xxxx-..." style="flex:1">
+<button class="btn btn-sm btn-secondary" onclick="alternarVisibilidadToken()" title="Mostrar/ocultar" id="mp-token-toggle">👁️</button>
+</div>
+</div>
+<div class="form-group" style="flex:1"><label>Entorno</label>
+<select id="mp-environment" onchange="guardarMpConfig()">
+<option value="production">Producción</option>
+<option value="sandbox">Sandbox</option>
+</select>
+</div>
+</div>
+<div class="form-row" style="margin-top:.5rem">
+<div class="form-group" style="flex:2"><label>Webhook URL (opcional)</label>
+<input type="url" id="mp-webhook-url" placeholder="https://tu-servidor.com" onchange="guardarMpConfig()">
+</div>
+<div class="form-group" style="flex:1;display:flex;align-items:flex-end;gap:.5rem;padding-bottom:2px">
+<button class="btn btn-sm btn-primary" onclick="guardarMpConfig()">💾 Guardar en servidor</button>
+<button class="btn btn-sm btn-secondary" onclick="probarMpConexion()" id="btn-test-mp">🔍 Probar</button>
+</div>
+</div>
+<div id="mp-config-status" style="margin-top:.5rem;font-size:.85rem;min-height:1.2rem"></div>
+</div>
+<div class="card">
+<h3>📋 Categorías del Menú</h3>
+<p class="text-muted" style="font-size:.85rem;margin-bottom:.75rem">Gestiona las categorías para organizar los platillos en la tienda.</p>
+<div class="flex gap-1 mb-1" style="flex-wrap:wrap">
+<input type="text" id="nueva-categoria" placeholder="Nueva categoría..." style="width:auto;flex:1;min-width:150px">
+<button class="btn btn-sm btn-primary" onclick="agregarCategoria()">+ Añadir</button>
+</div>
+<div id="categorias-lista" style="display:flex;flex-wrap:wrap;gap:.5rem"></div>
+</div>
+<div class="card">
+<h3>📸 Platillos sin imagen</h3>
+<div id="platillos-sin-imagen"></div>
+</div>
+<div class="card">
+<h3>💾 Respaldo de datos</h3>
+<p class="text-muted" style="font-size:.85rem;margin-bottom:.75rem">El servidor hace backup automático de <code>data.json</code> cada 30 min y tras cada cambio. Los últimos 30 backups se conservan.</p>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap">
+<button class="btn btn-sm btn-secondary" onclick="crearBackupManual()">📀 Backup ahora</button>
+<button class="btn btn-sm btn-outline" onclick="listarBackups()" style="font-size:.8rem">📋 Ver backups</button>
+</div>
+<div id="backup-status" style="margin-top:.5rem;font-size:.85rem;min-height:1.2rem"></div>
+<div id="backup-list" style="margin-top:.5rem;font-size:.8rem"></div>
+</div>
+</div>
+
+<!-- STOREFRONT -->
+<div class="storefront" id="storefront">
+<button class="store-close" onclick="cerrarTienda()">✕</button>
+<div class="store-banner" id="store-banner-el">
+<div id="store-banner-img"></div>
+<div class="store-banner-overlay">
+<div class="store-name" id="store-name-el">Restaurante</div>
+<div class="store-desc" id="store-desc-el"></div>
+</div>
+</div>
+<div class="store-search"><input type="text" id="store-search" placeholder="🔍 Buscar en el menú..." oninput="renderStoreDishes()"></div>
+<div class="store-cats" id="store-cats"></div>
+<div class="store-dishes" id="store-dishes"></div>
+</div>
+
+<!-- Cart overlay + sheet -->
+<div class="cart-overlay" id="cart-overlay" onclick="cerrarCarrito()"></div>
+<div class="cart-sheet" id="cart-sheet">
+<div class="cart-handle"></div>
+<div class="flex-between mb-1"><h3 style="font-size:1.1rem">🛒 Tu pedido</h3><button class="btn btn-sm" onclick="cerrarCarrito()" style="border:none;font-size:1.2rem;color:var(--text-light);background:none;cursor:pointer">✕</button></div>
+<div id="cart-items"></div>
+<div id="cart-footer"></div>
+</div>
+
+<!-- MODAL: Ingrediente -->
+<div class="modal-overlay" id="modal-ingrediente"><div class="modal">
+<div class="modal-header"><h2 id="modal-ingrediente-title">Nuevo Ingrediente</h2><button class="modal-close" onclick="cerrarModal('modal-ingrediente')">&times;</button></div>
+<div class="modal-body">
+<input type="hidden" id="ingrediente-id">
+<div class="form-group"><label>Nombre</label><input type="text" id="ing-nombre"></div>
+<div class="form-row-3">
+<div class="form-group"><label>Unidad receta</label><select id="ing-recipe-unit"><option value="g">g</option><option value="ml">ml</option><option value="unidad">unidad</option></select></div>
+<div class="form-group"><label>Precio compra</label><input type="number" id="ing-precio" step="0.01" min="0"></div>
+<div class="form-group"><label>Cant. compra</label><input type="number" id="ing-cantidad" step="0.1" min="0" value="1"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Unidad compra</label><select id="ing-purchase-unit"><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="L">L</option><option value="unidad">unidad</option><option value="docena">docena</option></select></div>
+<div class="form-group"><label>Rendimiento %</label><input type="number" id="ing-rendimiento" min="1" max="100" value="100"></div>
+<div class="form-group"><label>Costo x unidad</label><div style="padding:.6rem .8rem;background:var(--bg);border-radius:var(--radius);font-weight:700" id="ing-costo-preview">—</div></div>
+</div>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="cerrarModal('modal-ingrediente')">Cancelar</button><button class="btn btn-primary" onclick="guardarIngrediente()">Guardar</button></div>
+</div></div>
+
+<!-- MODAL: Platillo -->
+<div class="modal-overlay" id="modal-platillo"><div class="modal">
+<div class="modal-header"><h2 id="modal-platillo-title">Nuevo Platillo</h2><button class="modal-close" onclick="cerrarModal('modal-platillo')">&times;</button></div>
+<div class="modal-body">
+<input type="hidden" id="platillo-id">
+<div class="form-row">
+<div class="form-group"><label>Nombre</label><input type="text" id="plat-nombre"></div>
+<div class="form-group"><label>Porciones</label><input type="number" id="plat-porciones" min="1" value="1"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Categoría (menú digital)</label><select id="plat-categoria"></select></div>
+<div class="form-group"><label>Precio menú digital</label><input type="number" id="plat-precio" step="0.5" min="0" placeholder="0 = usar precio sugerido"><small class="text-muted" style="font-size:.75rem">0 = calculado del costeo</small></div>
+</div>
+<div class="form-group"><label>Descripción corta</label><textarea id="plat-descripcion" placeholder="Descripción para el menú digital..."></textarea></div>
+<div class="form-group"><label>Imagen del platillo</label>
+<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+<div class="img-upload-btn" onclick="document.getElementById('plat-img-input').click()">📷 Subir imagen</div>
+<input type="file" id="plat-img-input" accept="image/*" style="display:none" onchange="subirImagenPlatillo(this)">
+<button class="btn btn-sm btn-danger" onclick="eliminarImagenPlatillo()" id="plat-img-delete" style="display:none">Eliminar</button>
+</div>
+<div id="plat-img-preview" style="margin-top:.5rem"></div>
+</div>
+<div class="form-group">
+<div class="flex-between mb-1"><label style="font-weight:600;font-size:.85rem">Ingredientes</label><button class="btn btn-sm btn-accent" onclick="agregarFilaIngrediente()">+ Añadir</button></div>
+<div id="receta-ingredientes"></div>
+</div>
+<div class="card" style="background:var(--bg)">
+<div class="flex-between"><span class="fw-bold">Costo total:</span><span class="fw-bold text-primary" id="plat-costo-preview" style="font-size:1.2rem">$0.00</span></div>
+<div class="flex-between mt-1" style="font-size:.85rem;color:var(--text-light)"><span>Costo por porción:</span><span id="plat-costo-porcion">$0.00</span></div>
+</div>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="cerrarModal('modal-platillo')">Cancelar</button><button class="btn btn-primary" onclick="guardarPlatillo()">Guardar</button></div>
+</div></div>
+
+<!-- MODAL: API Platform -->
+<div class="modal-overlay" id="modal-api"><div class="modal">
+<div class="modal-header"><h2 id="modal-api-title">🔌 Configurar API</h2><button class="modal-close" onclick="cerrarModal('modal-api')">&times;</button></div>
+<div class="modal-body">
+<input type="hidden" id="api-index">
+<div class="info-box" style="margin-bottom:1rem">Configura las credenciales de la API para esta plataforma. Los valores se almacenan localmente.</div>
+<div class="api-modal-grid">
+<div class="full"><label>Nombre de la plataforma</label><input type="text" id="api-nombre" disabled style="background:var(--bg)"></div>
+<div><label>API Key / Client ID</label><input type="text" id="api-key" placeholder="tk_..." oninput="actualizarEstadoApi()"></div>
+<div><label>API Secret / Token</label><input type="password" id="api-secret" placeholder="••••••••" oninput="actualizarEstadoApi()"></div>
+<div><label>Store / Account ID</label><input type="text" id="api-store-id" placeholder="ID de tienda" oninput="actualizarEstadoApi()"></div>
+<div><label>Webhook URL</label><input type="url" id="api-webhook" placeholder="https://tu-servidor.com/webhook"></div>
+<div class="full"><label>Entorno</label><select id="api-environment"><option value="production">Producción</option><option value="sandbox">Sandbox / Pruebas</option></select></div>
+</div>
+<div id="api-status-msg" style="margin-top:.75rem;font-size:.85rem"></div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="cerrarModal('modal-api')">Cancelar</button>
+<button class="btn btn-primary" onclick="probarConexionApi()" id="btn-probar-api">🔍 Probar conexión</button>
+<button class="btn btn-success" onclick="guardarApi()">💾 Guardar</button>
+</div>
+</div></div>
+
+<!-- MODAL: Gasto Fijo -->
+<div class="modal-overlay" id="modal-gasto"><div class="modal">
+<div class="modal-header"><h2 id="modal-gasto-title">Nuevo Gasto Fijo</h2><button class="modal-close" onclick="cerrarModal('modal-gasto')">&times;</button></div>
+<div class="modal-body">
+<input type="hidden" id="gasto-id">
+<div class="form-row">
+<div class="form-group"><label>Nombre</label><input type="text" id="gas-nombre"></div>
+<div class="form-group"><label>Categoría</label><select id="gas-categoria"><option value="Renta">Renta</option><option value="Servicios">Servicios</option><option value="Nomina">Nómina</option><option value="Mobiliario">Mobiliario</option><option value="Marketing">Marketing</option><option value="Mantenimiento">Mantenimiento</option><option value="Seguros">Seguros</option><option value="Tecnologia">Tecnología</option><option value="Otros">Otros</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Monto</label><input type="number" id="gas-monto" step="0.01" min="0"></div>
+<div class="form-group"><label>Frecuencia</label><select id="gas-frecuencia"><option value="mensual">Mensual</option><option value="bimestral">Bimestral</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option></select></div>
+</div>
+</div>
+<div class="modal-footer"><button class="btn btn-secondary" onclick="cerrarModal('modal-gasto')">Cancelar</button><button class="btn btn-primary" onclick="guardarGasto()">Guardar</button></div>
+</div></div>
+
+<script>
+// ========== STATE ==========
+let ingredientes = [], platillos = [], gastosFijos = [];
+let editandoIngredienteId = null, editandoPlatilloId = null, editandoGastoId = null;
+let recetaIngredientesTemp = [];
+let platilloImagenActual = null;
+
+const CATEGORIAS_PRED = ['Entradas','Platos Fuertes','Pastas','Pizzas','Hamburguesas','Tacos','Postres','Bebidas','Cafés','Cócteles','Saludable','Infantil'];
+const FRECUENCIA_A_MENSUAL = { mensual: 1, bimestral: 1/2, trimestral: 1/3, semestral: 1/6, anual: 1/12 };
+
+const CONFIG_POR_DEFECTO = {
+  ivaTasa: 16, tieneRFC: true, isrRetencion: 2.5, ivaRetencion: 50,
+  plataformas: [
+    { id: 'rappi', nombre: 'Rappi', comision: 25, activa: true, color: '#ff3b5c', icon: '🦸', apiKey: '', apiSecret: '', storeId: '', webhookUrl: '', environment: 'production' },
+    { id: 'uber', nombre: 'Uber Eats', comision: 25, activa: true, color: '#000000', icon: '⚫', apiKey: '', apiSecret: '', storeId: '', webhookUrl: '', environment: 'production' },
+    { id: 'didi', nombre: 'DiDi Food', comision: 23, activa: true, color: '#ff8000', icon: '🟠', apiKey: '', apiSecret: '', storeId: '', webhookUrl: '', environment: 'production' },
+  ]
+};
+
+const TIENDA_DEFECTO = {
+  nombre: 'Mi Restaurante', desc: 'Comida deliciosa', color: '#c0392b',
+  logo: '', banner: '', envio: 0, minOrder: 0, moneda: 'MXN',
+  mpPublicKey: '', mpBackendUrl: 'http://localhost:3001', categorias: ['Entradas','Platos Fuertes','Postres','Bebidas']
+};
+
+let configPlataformas = JSON.parse(JSON.stringify(CONFIG_POR_DEFECTO));
+let configTienda = JSON.parse(JSON.stringify(TIENDA_DEFECTO));
+let carrito = { items: [], nombre: '', telefono: '', direccion: '', notas: '' };
+let storeCategoriaActiva = 'todas';
+
+const UNITS = {
+  g: { group: 'weight', toBase: 1, label: 'g' }, kg: { group: 'weight', toBase: 1000, label: 'kg' },
+  ml: { group: 'volume', toBase: 1, label: 'ml' }, L: { group: 'volume', toBase: 1000, label: 'L' },
+  unidad: { group: 'count', toBase: 1, label: 'unidad' }, docena: { group: 'count', toBase: 12, label: 'docena' },
+};
+function convertirUnidad(c, d, a) { const uD=UNITS[d],uA=UNITS[a]; if(!uD||!uA||uD.group!==uA.group)return null; return c*uD.toBase/uA.toBase; }
+function calcularCostoUnitario(ing) {
+  const c=convertirUnidad(ing.purchaseQuantity,ing.purchaseUnit,ing.recipeUnit);
+  if(!c||c<=0)return null; const u=c*((ing.yield||100)/100); return u>0?ing.purchasePrice/u:null;
+}
+
+// ========== PERSISTENCIA ==========
+let syncStatus = 'local';
+function actualizarSyncStatus() {
+  const el = document.getElementById('sync-status');
+  if (el) {
+    el.innerHTML = syncStatus === 'synced' ? '<span style="color:#27ae60">☁️</span>' :
+      syncStatus === 'syncing' ? '<span style="color:#e67e22">⟳</span>' :
+      syncStatus === 'error' ? '<span style="color:#e74c3c">⚠️</span>' :
+      '<span style="color:#7f8c8d">💾</span>';
+    el.title = syncStatus === 'synced' ? 'Sincronizado con servidor' :
+      syncStatus === 'syncing' ? 'Sincronizando...' :
+      syncStatus === 'error' ? 'Error de sincronización' :
+      'Solo local';
+  }
+}
+
+let syncTimer = null;
+function syncStateToServer() {
+  const bu = getBackendUrl();
+  if (!bu) return;
+  const data = { ingredientes, platillos, gastosFijos, configPlataformas, configTienda };
+  syncStatus = 'syncing';
+  actualizarSyncStatus();
+  fetch(bu + '/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data })
+  }).then(r => {
+    if (r.ok) { syncStatus = 'synced'; actualizarSyncStatus(); }
+    else { syncStatus = 'error'; actualizarSyncStatus(); }
+  }).catch(() => { syncStatus = 'error'; actualizarSyncStatus(); });
+}
+
+function scheduleSync() {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncStateToServer, 3000);
+}
+
+async function cargarStateDesdeServidor() {
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu + '/api/data');
+    if (!res.ok) return false;
+    const json = await res.json();
+    if (!json.ok || !json.data) return false;
+    const d = json.data;
+    if (d.ingredientes) ingredientes = d.ingredientes;
+    if (d.platillos) platillos = d.platillos;
+    if (d.gastosFijos) gastosFijos = d.gastosFijos;
+    if (d.configPlataformas) configPlataformas = { ...CONFIG_POR_DEFECTO, ...d.configPlataformas };
+    if (d.configTienda) configTienda = { ...TIENDA_DEFECTO, ...d.configTienda };
+    syncStatus = 'synced';
+    actualizarSyncStatus();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function guardarState() {
+  ['ingredientes','platillos','gastos','config','tienda'].forEach(k => {
+    localStorage.setItem('costeapp_'+k, JSON.stringify({ingredientes,platillos,gastosFijos,configPlataformas,configTienda}[{ingredientes:'ingredientes',platillos:'platillos',gastos:'gastosFijos',config:'configPlataformas',tienda:'configTienda'}[k]]));
+  });
+  scheduleSync();
+}
+
+function cargarState() {
+  // Load from localStorage first (fast, synchronous)
+  try {
+    ['ingredientes','platillos','gastos','config','tienda'].forEach(k => {
+      const v=localStorage.getItem('costeapp_'+k); if(!v)return;
+      const d=JSON.parse(v);
+      if(k==='ingredientes'&&d) ingredientes=d;
+      if(k==='platillos'&&d) platillos=d;
+      if(k==='gastos'&&d) gastosFijos=d;
+      if(k==='config'&&d) {
+        configPlataformas={...CONFIG_POR_DEFECTO,...d};
+        if(d.plataformas){
+          const ids=CONFIG_POR_DEFECTO.plataformas.map(p=>p.id);
+          configPlataformas.plataformas=[...CONFIG_POR_DEFECTO.plataformas.map(def=>{const e=d.plataformas.find(p=>p.id===def.id);return e?{...def,...e}:def}),...d.plataformas.filter(p=>!ids.includes(p.id))];
+        }
+      }
+      if(k==='tienda'&&d) configTienda={...TIENDA_DEFECTO,...d};
+    });
+  } catch(e){console.warn('Error cargando datos',e);}
+  // Then try to sync from server (async enhancement)
+  cargarStateDesdeServidor().then(ok => { if (ok) renderAll(); });
+}
+
+// ========== TABS ==========
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const t=b.dataset.tab;
+    document.getElementById('tab-'+t).classList.add('active');
+    const f={costeo:'renderCosteo',platillos:'renderPlatillos',plataformas:'renderPlataformas',gastos:'renderGastos',dashboard:'renderDashboard',tienda:'renderTienda'}[t];
+    if(f) try{window[f]()}catch(e){}
+  });
+});
+
+// ========== INGREDIENTES ==========
+function renderIngredientes(){const c=document.getElementById('ingredientes-table-container');if(!ingredientes.length){c.innerHTML='<p class="empty-state"><div class="icon">🥕</div><p>No hay ingredientes.</p></p>';return}
+c.innerHTML=`<table><thead><tr><th>Nombre</th><th>Unidad</th><th>Precio compra</th><th>Cant.</th><th>Unidad compra</th><th>Rend.</th><th class="text-right">Costo x unidad</th><th class="text-center">Acción</th></tr></thead><tbody>${ingredientes.map(i=>{const cu=calcularCostoUnitario(i);return `<tr><td class="fw-bold">${escHtml(i.name)}</td><td>${i.recipeUnit}</td><td>$${i.purchasePrice.toFixed(2)}</td><td>${i.purchaseQuantity}</td><td>${i.purchaseUnit}</td><td>${i.yield}%</td><td class="text-right fw-bold">${cu!==null?'$'+cu.toFixed(4):'—'}</td><td class="text-center"><button class="btn btn-sm btn-secondary" onclick="editarIngrediente('${i.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarIngrediente('${i.id}')">🗑️</button></td></tr>`}).join('')}</tbody></table>`;}
+function abrirModalIngrediente(d){editandoIngredienteId=d?d.id:null;document.getElementById('modal-ingrediente-title').textContent=d?'Editar Ingrediente':'Nuevo Ingrediente';document.getElementById('ingrediente-id').value=d?d.id:'';document.getElementById('ing-nombre').value=d?d.name:'';document.getElementById('ing-recipe-unit').value=d?d.recipeUnit:'g';document.getElementById('ing-precio').value=d?d.purchasePrice:'';document.getElementById('ing-cantidad').value=d?d.purchaseQuantity:'1';document.getElementById('ing-purchase-unit').value=d?d.purchaseUnit:'kg';document.getElementById('ing-rendimiento').value=d?d.yield:'100';document.getElementById('modal-ingrediente').classList.add('active');actualizarVistaPreviaCosto();}
+function guardarIngrediente(){const n=document.getElementById('ing-nombre').value.trim(),ru=document.getElementById('ing-recipe-unit').value,pp=parseFloat(document.getElementById('ing-precio').value),pq=parseFloat(document.getElementById('ing-cantidad').value),pu=document.getElementById('ing-purchase-unit').value,y=parseInt(document.getElementById('ing-rendimiento').value)||100;if(!n){alert('El nombre es obligatorio.');return}if(isNaN(pp)||pp<=0){alert('Precio inválido.');return}if(isNaN(pq)||pq<=0){alert('Cantidad inválida.');return}const d={name:n,recipeUnit:ru,purchasePrice:pp,purchaseQuantity:pq,purchaseUnit:pu,yield:y};if(editandoIngredienteId){const i=ingredientes.findIndex(x=>x.id===editandoIngredienteId);if(i!==-1)ingredientes[i]={...ingredientes[i],...d}}else{d.id='ing_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);ingredientes.push(d)}guardarState();renderIngredientes();cerrarModal('modal-ingrediente');}
+function editarIngrediente(id){const i=ingredientes.find(x=>x.id===id);if(i)abrirModalIngrediente(i)}
+function eliminarIngrediente(id){if(!confirm('¿Eliminar este ingrediente?'))return;ingredientes=ingredientes.filter(i=>i.id!==id);platillos.forEach(p=>{p.ingredients=p.ingredients.filter(x=>x.ingredientId!==id)});guardarState();renderIngredientes()}
+function actualizarVistaPreviaCosto(){const ru=document.getElementById('ing-recipe-unit').value,pp=parseFloat(document.getElementById('ing-precio').value)||0,pq=parseFloat(document.getElementById('ing-cantidad').value)||1,pu=document.getElementById('ing-purchase-unit').value,y=parseInt(document.getElementById('ing-rendimiento').value)||100;const c=calcularCostoUnitario({recipeUnit:ru,purchasePrice:pp,purchaseQuantity:pq,purchaseUnit:pu,yield:y});document.getElementById('ing-costo-preview').textContent=c!==null?'$'+c.toFixed(4)+' / '+ru:'Incompatible';}
+document.getElementById('ing-recipe-unit').addEventListener('change',actualizarVistaPreviaCosto);
+document.getElementById('ing-precio').addEventListener('input',actualizarVistaPreviaCosto);
+document.getElementById('ing-cantidad').addEventListener('input',actualizarVistaPreviaCosto);
+document.getElementById('ing-purchase-unit').addEventListener('change',actualizarVistaPreviaCosto);
+document.getElementById('ing-rendimiento').addEventListener('input',actualizarVistaPreviaCosto);
+
+// ========== PLATILLOS ==========
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+function renderPlatillos(){const c=document.getElementById('platillos-list');if(!platillos.length){c.innerHTML='<div class="card"><p class="empty-state"><div class="icon">🍽️</div><p>No hay platillos.</p></div>';return}
+c.innerHTML=platillos.map(p=>{const ct=calcularCostoPlatillo(p),por=p.portions||1,cp=por>0?ct/por:0;return `<div class="card"><div class="flex-between"><div style="display:flex;align-items:center;gap:.75rem">${p.image?'<img src="'+p.image+'" class="preview-img-sm" alt="">':''}<div><h3 style="margin:0">${escHtml(p.name)}</h3><p style="font-size:.8rem;color:var(--text-light);margin-top:.15rem">${p.category||'Sin categoría'} · ${por} porción(es)</p></div></div><div style="text-align:right"><div style="font-size:1.3rem;font-weight:700;color:var(--primary)">$${ct.toFixed(2)}</div><div style="font-size:.8rem;color:var(--text-light)">costo total</div><div style="font-size:.9rem;font-weight:600">$${cp.toFixed(2)} / porción</div></div></div><div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editarPlatillo('${p.id}')">✏️ Editar</button><button class="btn btn-sm btn-danger" onclick="eliminarPlatillo('${p.id}')">🗑️</button>${!p.image?'<span class="badge badge-warning" style="align-self:center">Sin imagen</span>':''}</div></div>`}).join('')}
+
+function abrirModalPlatillo(d){editandoPlatilloId=d?d.id:null;document.getElementById('modal-platillo-title').textContent=d?'Editar Platillo':'Nuevo Platillo';document.getElementById('platillo-id').value=d?d.id:'';document.getElementById('plat-nombre').value=d?d.name:'';document.getElementById('plat-porciones').value=d?d.portions:'1';document.getElementById('plat-descripcion').value=d?d.description||'':'';
+const catsSelect=document.getElementById('plat-categoria');catsSelect.innerHTML='<option value="">Sin categoría</option>'+configTienda.categorias.map(c=>`<option value="${c}" ${d&&d.category===c?'selected':''}>${c}</option>`).join('');
+document.getElementById('plat-precio').value=d&&d.precioMenu?d.precioMenu:'';
+platilloImagenActual=d?d.image||null:null;const pp=document.getElementById('plat-img-preview'),pd=document.getElementById('plat-img-delete');
+if(platilloImagenActual){pp.innerHTML='<img src="'+platilloImagenActual+'" class="preview-img" style="width:120px;height:120px">';pd.style.display='inline-flex'}else{pp.innerHTML='';pd.style.display='none'}
+recetaIngredientesTemp=d?JSON.parse(JSON.stringify(d.ingredients)):[];renderFilasIngrediente();actualizarPreviewCostoPlatillo();document.getElementById('modal-platillo').classList.add('active')}
+
+async function subirImagenPlatillo(input){const file=input.files[0];if(!file)return;if(file.size>300*1024){alert('La imagen debe ser menor a 300KB.');return}
+const bu=getBackendUrl();const form=new FormData();form.append('image',file);
+try{const res=await fetch(bu+'/api/upload/image',{method:'POST',body:form});const data=await res.json();if(data.ok){platilloImagenActual=data.url;document.getElementById('plat-img-preview').innerHTML='<img src="'+data.url+'" class="preview-img" style="width:120px;height:120px">';document.getElementById('plat-img-delete').style.display='inline-flex'}else{alert('Error al subir imagen: '+data.error)}}catch(e){alert('Error de conexión al servidor')};input.value=''}
+function eliminarImagenPlatillo(){platilloImagenActual=null;document.getElementById('plat-img-preview').innerHTML='';document.getElementById('plat-img-delete').style.display='none'}
+
+function renderFilasIngrediente(){const c=document.getElementById('receta-ingredientes');if(!recetaIngredientesTemp.length){c.innerHTML='<p class="text-muted" style="font-size:.85rem;padding:.5rem 0">Sin ingredientes.</p>';return}
+c.innerHTML=recetaIngredientesTemp.map((item,i)=>{const ing=ingredientes.find(x=>x.id===item.ingredientId),cu=ing?calcularCostoUnitario(ing):null,cl=(cu!==null&&item.quantity>0)?cu*item.quantity:0;return `<div class="ingredient-row"><select onchange="cambiarIngredienteReceta(${i},this.value)" style="min-width:150px"><option value="">—</option>${ingredientes.map(ing=>`<option value="${ing.id}" ${ing.id===item.ingredientId?'selected':''}>${escHtml(ing.name)}</option>`).join('')}</select><input type="number" placeholder="Cant." step="0.1" min="0" value="${item.quantity||''}" oninput="cambiarCantidadReceta(${i},this.value)" style="min-width:70px"><span style="font-size:.85rem;min-width:30px;color:var(--text-light)">${ing?ing.recipeUnit:''}</span><span style="font-size:.85rem;min-width:70px;text-align:right" class="fw-bold">${cl>0?'$'+cl.toFixed(4):''}</span><button class="btn btn-sm btn-danger" onclick="eliminarFilaReceta(${i})">✕</button></div>`}).join('')}
+function cambiarIngredienteReceta(i,v){recetaIngredientesTemp[i].ingredientId=v;renderFilasIngrediente();actualizarPreviewCostoPlatillo()}
+function cambiarCantidadReceta(i,v){recetaIngredientesTemp[i].quantity=parseFloat(v)||0;renderFilasIngrediente();actualizarPreviewCostoPlatillo()}
+function eliminarFilaReceta(i){recetaIngredientesTemp.splice(i,1);renderFilasIngrediente();actualizarPreviewCostoPlatillo()}
+function agregarFilaIngrediente(){recetaIngredientesTemp.push({ingredientId:'',quantity:0});renderFilasIngrediente();actualizarPreviewCostoPlatillo()}
+function actualizarPreviewCostoPlatillo(){const por=parseInt(document.getElementById('plat-porciones').value)||1;let t=0;for(const item of recetaIngredientesTemp){const ing=ingredientes.find(i=>i.id===item.ingredientId);if(ing&&item.quantity>0){const cu=calcularCostoUnitario(ing);if(cu!==null)t+=cu*item.quantity}}document.getElementById('plat-costo-preview').textContent='$'+t.toFixed(2);document.getElementById('plat-costo-porcion').textContent=por>0?'$'+(t/por).toFixed(2):'$0.00'}
+document.getElementById('plat-porciones').addEventListener('input',actualizarPreviewCostoPlatillo);
+
+function guardarPlatillo(){const n=document.getElementById('plat-nombre').value.trim(),por=parseInt(document.getElementById('plat-porciones').value)||1,desc=document.getElementById('plat-descripcion').value.trim(),cat=document.getElementById('plat-categoria').value,pm=parseFloat(document.getElementById('plat-precio').value)||0,ing=recetaIngredientesTemp.filter(x=>x.ingredientId&&x.quantity>0);if(!n){alert('El nombre es obligatorio.');return}if(!ing.length){alert('Agrega al menos un ingrediente.');return}
+const d={name:n,portions:por,description:desc,category:cat,precioMenu:pm,ingredients:ing,image:platilloImagenActual};if(editandoPlatilloId){const i=platillos.findIndex(p=>p.id===editandoPlatilloId);if(i!==-1)platillos[i]={...platillos[i],...d}}else{d.id='plat_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);platillos.push(d)}guardarState();renderPlatillos();cerrarModal('modal-platillo')}
+function editarPlatillo(id){const p=platillos.find(x=>x.id===id);if(p)abrirModalPlatillo(p)}
+function eliminarPlatillo(id){if(!confirm('¿Eliminar este platillo?'))return;platillos=platillos.filter(p=>p.id!==id);guardarState();renderPlatillos()}
+function calcularCostoPlatillo(p){let t=0;for(const item of p.ingredients){const ing=ingredientes.find(i=>i.id===item.ingredientId);if(ing&&item.quantity>0){const cu=calcularCostoUnitario(ing);if(cu!==null)t+=cu*item.quantity}}return t}
+
+// ========== CÁLCULOS PLATAFORMAS ==========
+function calcularNetoPlataforma(precio,comisionPct){const cfg=configPlataformas,it=cfg.ivaTasa/100,c=comisionPct/100,s=precio,iv=s*it,tc=s+iv,cm=s*c,ic=cm*it,ir=cfg.tieneRFC?(cfg.isrRetencion/100)*s:0.20*s,ivr=cfg.tieneRFC?(cfg.ivaRetencion/100)*iv:iv,net=tc-cm-ic-ir-ivr;return{sub:s,iv,iv:t,c:cm,ic,ir,ivr,net,cc:cm+ic,ct:ir+ivr,te:((s-net)/s)*100}}
+
+// ========== COSTEO ==========
+async function renderCosteo(){const mg=parseInt(document.getElementById('margen-ganancia').value)||30,cnt=document.getElementById('costeo-cards'),sum=document.getElementById('costeo-summary');if(!platillos.length){sum.innerHTML='';cnt.innerHTML='<div class="card"><p class="empty-state"><div class="icon">💰</div><p>Sin platillos.</p></div>';return}
+cnt.innerHTML='<div class="card" style="text-align:center;padding:2rem"><span style="font-size:2rem;opacity:.4">💰</span><p style="color:var(--text-light);margin-top:.5rem">Calculando costos...</p></div>';sum.innerHTML='';
+let cg=0,co=0,html='';const pa=configPlataformas.plataformas.filter(p=>p.activa);
+// Fetch costing data from server
+let costingResult=null;
+try{const bu=getBackendUrl();const res=await fetch(bu+'/api/calculate/costing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({margenGanancia:mg})});const d=await res.json();if(d.ok)costingResult=d}catch(e){}
+const dishes=costingResult?costingResult.dishes:platillos.map(p=>{const ct=calcularCostoPlatillo(p),po=p.portions||1,cp=po>0?ct/po:0,psg=mg>0?cp/(1-mg/100):cp;return{id:p.id,name:p.name,icon:p.icon||'🍽️',description:p.description,portions:po,costo:cp,precioVenta:psg,recipeCount:p.recipe?.length||0,ingredients:(p.recipe||[]).map(ri=>{const i=ingredientes.find(x=>x.id===ri.ingredientId);if(!i)return null;const cu=calcularCostoUnitario(i);return{name:i.name,qty:ri.qty,unit:i.recipeUnit,cost:cu!==null?cu*ri.quantity:0,pct:ct>0?((cu!==null?cu*ri.quantity:0)/ct*100):0}}).filter(Boolean),platforms:pa.map(pl=>{const ca=calcularNetoPlataforma(psg,pl.comision),gn=ca.net-cp,mn=ca.net>0?(gn/ca.net)*100:0;return{id:pl.id,name:pl.nombre,icon:pl.icon,comision:pl.comision,c:ca.c,ic:ca.ic,ir:ca.ir,ivr:ca.ivr,neto:ca.net,ganancia:gn,margen:mn}})}})
+for(const d of dishes){const cp=d.costo,psg=d.precioVenta,po=d.portions,ct=cp*po,gn=psg-cp;cg+=ct;co++
+let ph=pa.length?`<div style="margin-top:1rem;padding-top:1rem;border-top:2px dashed var(--border)"><p style="font-size:.85rem;font-weight:600;margin-bottom:.5rem">📱 Comparativa (precio: <strong>$${psg.toFixed(2)}</strong>)</p><div class="comparison-grid"><div style="background:var(--bg);text-align:left"><div class="net-label">CONCEPTO</div><div style="font-size:.7rem;color:var(--text-light);line-height:1.8">Comisión<br>IVA com.<br>Ret. ISR<br>Ret. IVA<br><strong>Neto</strong><br><strong>Ganancia</strong><br><strong>Margen</strong></div></div>${d.platforms.map(pl=>`<div><div class="net-label" style="font-weight:700;font-size:.8rem">${pl.icon} ${pl.name}</div><div style="font-size:.7rem;color:var(--text-light);line-height:1.8">-$${(pl.c||0).toFixed(2)}<br>-$${(pl.ic||0).toFixed(2)}<br>-$${(pl.ir||0).toFixed(2)}<br>-$${(pl.ivr||0).toFixed(2)}<br><strong style="font-size:.85rem;color:${(pl.neto||0)>cp?'#27ae60':'#e74c3c'}">$${(pl.neto||0).toFixed(2)}</strong><br><strong style="font-size:.8rem;color:${(pl.ganancia||0)>0?'#27ae60':'#e74c3c'}">$${(pl.ganancia||0).toFixed(2)}</strong><br><strong style="font-size:.8rem;color:${(pl.margen||0)>0?'#27ae60':'#e74c3c'}">${(pl.margen||0).toFixed(1)}%</strong></div></div>`).join('')}</div></div>`:''
+html+=`<div class="card"><div class="flex-between"><div><h3 style="margin:0">${escHtml(d.name)}</h3>${d.description?'<p class="text-muted" style="font-size:.85rem;margin-top:.25rem">'+escHtml(d.description)+'</p>':''}<p style="font-size:.8rem;color:var(--text-light);margin-top:.25rem">${po} porción(es)</p></div><div style="text-align:right"><div style="font-size:1.1rem;font-weight:700;color:var(--primary)">$${cp.toFixed(2)}</div><div style="font-size:.75rem;color:var(--text-light)">costo x porción</div></div></div>
+<div class="cost-breakdown"><table style="font-size:.85rem;margin-top:.5rem"><thead><tr><th>Ingrediente</th><th class="text-right">Cant.</th><th class="text-right">Costo unit.</th><th class="text-right">Subtotal</th><th class="text-right">%</th></tr></thead><tbody>${(d.ingredients||[]).map(item=>`<tr><td>${escHtml(item.name)}</td><td class="text-right">${item.qty} ${item.unit}</td><td class="text-right">$—</td><td class="text-right fw-bold">$${(item.cost||0).toFixed(4)}</td><td class="text-right"><span class="badge ${(item.pct||0)>30?'badge-primary':'badge-success'}">${(item.pct||0).toFixed(1)}%</span></td></tr>`).join('')}</tbody></table></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1rem;padding-top:1rem;border-top:2px solid var(--border)"><div><div style="font-size:.75rem;color:var(--text-light)">Costo total</div><div class="fw-bold">$${ct.toFixed(2)}</div></div><div><div style="font-size:.75rem;color:var(--text-light)">Costo x porción</div><div class="fw-bold">$${cp.toFixed(2)}</div></div><div><div style="font-size:.75rem;color:var(--text-light)">Precio sugerido</div><div class="fw-bold text-success">$${psg.toFixed(2)}</div></div><div><div style="font-size:.75rem;color:var(--text-light)">Ganancia x porción</div><div class="fw-bold" style="color:${gn>0?'#27ae60':'#e74c3c'}">$${gn.toFixed(2)} (${mg}%)</div></div></div>${ph}</div>`}
+const pp=co>0?cg/co:0;sum.innerHTML=`<div class="stat-card"><div class="value">${platillos.length}</div><div class="label">Platillos</div></div><div class="stat-card"><div class="value" style="color:var(--secondary)">$${cg.toFixed(2)}</div><div class="label">Costo total recetas</div></div><div class="stat-card"><div class="value" style="color:#27ae60">$${pp.toFixed(2)}</div><div class="label">Costo promedio</div><div class="sub">${mg}% margen</div></div><div class="stat-card"><div class="value" style="color:var(--accent)">${mg}%</div><div class="label">Margen configurado</div></div>`;cnt.innerHTML=html}
+
+// ========== PLATAFORMAS ==========
+function renderPlataformas(){const c=configPlataformas;document.getElementById('cfg-iva-tasa').value=c.ivaTasa;document.getElementById('cfg-tiene-rfc').value=c.tieneRFC?'1':'0';document.getElementById('cfg-isr').value=c.isrRetencion;document.getElementById('cfg-iva-ret').value=c.ivaRetencion;document.getElementById('cfg-iva-ret-efectivo').textContent=((c.ivaTasa*c.ivaRetencion)/100).toFixed(1)+'% ('+c.ivaTasa+'% × '+c.ivaRetencion+'%)';
+const l=document.getElementById('plataformas-lista');l.innerHTML=c.plataformas.map((p,i)=>{const neto100=100-p.comision-p.comision*c.ivaTasa/100-(c.tieneRFC?c.isrRetencion:20)-(c.tieneRFC?c.ivaTasa*c.ivaRetencion/100:c.ivaTasa);const apiOk=p.apiKey||p.apiSecret||p.storeId;return `<div class="platform-row ${p.id}" style="opacity:${p.activa?1:.5}"><div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:1.3rem">${p.icon}</span><span class="fw-bold">${escHtml(p.nombre)}</span><span class="api-indicator ${apiOk?'ok':'empty'}" title="${apiOk?'API configurada':'API sin configurar'}"></span></div><div><label class="toggle" onclick="event.stopPropagation()"><input type="checkbox" ${p.activa?'checked':''} onchange="togglePlataforma(${i},this.checked)"><span class="slider"></span></label></div><div><input type="number" value="${p.comision}" step="0.5" min="0" max="100" style="width:70px" onchange="cambiarComision(${i},this.value)">%</div><div>${p.activa?'<span class="badge badge-success">Activa</span>':'<span class="badge badge-dark">Inactiva</span>'}</div><div><button class="btn btn-sm btn-secondary" onclick="abrirModalApi(${i})" title="Configurar API">🔌</button></div><div><button class="btn btn-sm btn-danger" onclick="eliminarPlataforma(${i})" ${i<3?'disabled style="opacity:0.3"':''}>🗑️</button></div></div>${p.activa?`<div style="font-size:.8rem;color:var(--text-light);padding:0 0 .5rem 2rem;margin-top:-.3rem"><strong>Efecto en $100:</strong> Neto: <strong>$${neto100.toFixed(2)}</strong></div>`:''}`}).join('')}
+function guardarConfigPlataformas(){configPlataformas.ivaTasa=parseFloat(document.getElementById('cfg-iva-tasa').value)||16;configPlataformas.tieneRFC=document.getElementById('cfg-tiene-rfc').value==='1';configPlataformas.isrRetencion=parseFloat(document.getElementById('cfg-isr').value)||2.5;configPlataformas.ivaRetencion=parseFloat(document.getElementById('cfg-iva-ret').value)||50;renderPlataformas();guardarState()}
+function togglePlataforma(i,a){if(configPlataformas.plataformas[i]){configPlataformas.plataformas[i].activa=a;guardarState();renderPlataformas()}}
+function cambiarComision(i,v){if(configPlataformas.plataformas[i]){configPlataformas.plataformas[i].comision=parseFloat(v)||0;guardarState();renderPlataformas()}}
+function agregarPlataforma(){const n=prompt('Nombre:');if(!n)return;const c=parseFloat(prompt('Comisión %:'))||20;const api=confirm('¿Configurar API ahora? Si no, puedes hacerlo después.');const plat={id:'custom_'+Date.now(),nombre:n,comision:c,activa:true,color:'#7f8c8d',icon:'📱',apiKey:'',apiSecret:'',storeId:'',webhookUrl:'',environment:'production'};const idx=configPlataformas.plataformas.push(plat)-1;guardarState();renderPlataformas();if(api)setTimeout(()=>abrirModalApi(idx),100)}
+function eliminarPlataforma(i){if(i<3)return;if(!confirm('¿Eliminar?'))return;configPlataformas.plataformas.splice(i,1);guardarState();renderPlataformas()}
+
+// ─── API Platform Management ─────────────────────────────────
+let editandoApiIndex = -1;
+
+async function abrirModalApi(i) {
+  editandoApiIndex = i;
+  const p = configPlataformas.plataformas[i];
+  if (!p) return;
+  document.getElementById('modal-api-title').textContent = '🔌 API: ' + p.nombre;
+  document.getElementById('api-index').value = i;
+  document.getElementById('api-nombre').value = p.nombre;
+  document.getElementById('api-key').value = p.apiKey && p.apiKey !== '••••configurado' ? p.apiKey : '';
+  document.getElementById('api-secret').value = p.apiSecret && p.apiSecret !== '••••configurado' ? p.apiSecret : '';
+  document.getElementById('api-store-id').value = p.storeId || '';
+  document.getElementById('api-webhook').value = p.webhookUrl || '';
+  document.getElementById('api-environment').value = p.environment || 'production';
+  document.getElementById('api-status-msg').innerHTML = '';
+  document.getElementById('btn-probar-api').style.display = 'inline-flex';
+  document.getElementById('modal-api').classList.add('active');
+  actualizarEstadoApi();
+  // Try loading credentials from server
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu + '/api/data/platform-credentials');
+    const json = await res.json();
+    if (json.ok && json.credentials && json.credentials[p.id]) {
+      const c = json.credentials[p.id];
+      if (c.apiKey && !c.apiKey.includes('••••')) document.getElementById('api-key').value = c.apiKey;
+      if (c.apiSecret && !c.apiSecret.includes('••••')) document.getElementById('api-secret').value = c.apiSecret;
+      if (c.storeId) document.getElementById('api-store-id').value = c.storeId;
+      if (c.webhookUrl) document.getElementById('api-webhook').value = c.webhookUrl;
+      if (c.environment) document.getElementById('api-environment').value = c.environment;
+      actualizarEstadoApi();
+    }
+  } catch(e) {}
+}
+
+function actualizarEstadoApi() {
+  const key = document.getElementById('api-key').value.trim();
+  const secret = document.getElementById('api-secret').value.trim();
+  const storeId = document.getElementById('api-store-id').value.trim();
+  const msg = document.getElementById('api-status-msg');
+  if (key || secret || storeId) {
+    msg.innerHTML = '<span style="color:var(--text-light)">⚙️ Credenciales configuradas parcialmente</span>';
+  } else {
+    msg.innerHTML = '<span style="color:var(--text-light)">📭 Sin credenciales — solo cálculos de comisión</span>';
+  }
+}
+
+function guardarApi() {
+  const i = parseInt(document.getElementById('api-index').value);
+  if (i < 0 || i >= configPlataformas.plataformas.length) return;
+  const p = configPlataformas.plataformas[i];
+  p.apiKey = document.getElementById('api-key').value.trim();
+  p.apiSecret = document.getElementById('api-secret').value.trim();
+  p.storeId = document.getElementById('api-store-id').value.trim();
+  p.webhookUrl = document.getElementById('api-webhook').value.trim();
+  p.environment = document.getElementById('api-environment').value;
+  guardarState();
+  renderPlataformas();
+  cerrarModal('modal-api');
+  // Also persist to server
+  const creds = { apiKey: p.apiKey, apiSecret: p.apiSecret, storeId: p.storeId, webhookUrl: p.webhookUrl, environment: p.environment };
+  fetch(getBackendUrl()+'/api/data/platform-credentials', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ platformId: p.id, credentials: creds })
+  }).catch(()=>{});
+  // Remove sensitive fields from localStorage (keep only server-side)
+  p.apiKey = p.apiKey ? '••••configurado' : '';
+  p.apiSecret = p.apiSecret ? '••••configurado' : '';
+  guardarState();
+}
+
+async function probarConexionApi() {
+  const i = parseInt(document.getElementById('api-index').value);
+  if (i < 0 || i >= configPlataformas.plataformas.length) return;
+  const p = configPlataformas.plataformas[i];
+  const key = document.getElementById('api-key').value.trim();
+  const secret = document.getElementById('api-secret').value.trim();
+
+  const btn = document.getElementById('btn-probar-api');
+  const msg = document.getElementById('api-status-msg');
+
+  if (!key && !secret) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Se necesita API Key o Secret para probar</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Probando...';
+  msg.innerHTML = '<span style="color:var(--text-light)">⏳ Verificando conexión...</span>';
+
+  try {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(backendUrl + '/api/test-platform-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        platformId: p.id,
+        platformName: p.nombre,
+        apiKey: key,
+        apiSecret: secret,
+        storeId: p.storeId || '',
+        environment: document.getElementById('api-environment').value
+      })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msg.innerHTML = '<span style="color:#27ae60">✅ ' + escHtml(data.message || 'Conexión exitosa') + '</span>';
+    } else {
+      msg.innerHTML = '<span style="color:#e74c3c">❌ ' + escHtml(data.message || 'Error de conexión') + '</span>';
+    }
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Error al conectar con el backend: ' + escHtml(e.message) + '</span>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔍 Probar conexión';
+}
+
+// ========== GASTOS FIJOS ==========
+function calcularMontoMensual(g){return g.amount*(FRECUENCIA_A_MENSUAL[g.frequency]||1)}
+function renderGastos(){const s=document.getElementById('gastos-summary'),t=document.getElementById('gastos-table-container'),tm=gastosFijos.reduce((s,g)=>s+calcularMontoMensual(g),0);const pc={};for(const g of gastosFijos){const c=g.category||'Otros';pc[c]=(pc[c]||0)+calcularMontoMensual(g)}
+s.innerHTML=`<div class="stat-card"><div class="value" style="color:var(--secondary)">$${tm.toFixed(2)}</div><div class="label">Gastos fijos mensuales</div></div><div class="stat-card"><div class="value">${gastosFijos.length}</div><div class="label">Gastos registrados</div></div><div class="stat-card"><div class="value" style="color:var(--accent)">${Object.keys(pc).length}</div><div class="label">Categorías</div></div><div class="stat-card"><div style="display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center">${Object.entries(pc).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,m])=>`<span class="badge badge-info">${c}: $${m.toFixed(0)}</span>`).join('')}</div><div class="label">Top categorías</div></div>`
+if(!gastosFijos.length){t.innerHTML='<p class="empty-state"><div class="icon">🏢</div><p>Sin gastos fijos.</p></p>';return}
+t.innerHTML=`<table><thead><tr><th>Nombre</th><th>Categoría</th><th class="text-right">Monto</th><th>Frecuencia</th><th class="text-right">Mensual</th><th class="text-center">Acción</th></tr></thead><tbody>${gastosFijos.map(g=>`<tr><td class="fw-bold">${escHtml(g.name)}</td><td><span class="badge badge-info">${escHtml(g.category)}</span></td><td class="text-right">$${g.amount.toFixed(2)}</td><td>${g.frequency}</td><td class="text-right fw-bold">$${calcularMontoMensual(g).toFixed(2)}</td><td class="text-center"><button class="btn btn-sm btn-secondary" onclick="editarGasto('${g.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="eliminarGasto('${g.id}')">🗑️</button></td></tr>`).join('')}<tr style="font-weight:700;background:var(--bg)"><td colspan="4">Total mensual</td><td class="text-right fw-bold" style="font-size:1rem">$${tm.toFixed(2)}</td><td></td></tr></tbody></table>`}
+function abrirModalGasto(d){editandoGastoId=d?d.id:null;document.getElementById('modal-gasto-title').textContent=d?'Editar Gasto':'Nuevo Gasto';document.getElementById('gasto-id').value=d?d.id:'';document.getElementById('gas-nombre').value=d?d.name:'';document.getElementById('gas-categoria').value=d?d.category:'Renta';document.getElementById('gas-monto').value=d?d.amount:'';document.getElementById('gas-frecuencia').value=d?d.frequency:'mensual';document.getElementById('modal-gasto').classList.add('active')}
+function guardarGasto(){const n=document.getElementById('gas-nombre').value.trim(),c=document.getElementById('gas-categoria').value,m=parseFloat(document.getElementById('gas-monto').value),f=document.getElementById('gas-frecuencia').value;if(!n){alert('El nombre es obligatorio.');return}if(isNaN(m)||m<=0){alert('Monto inválido.');return}const d={name:n,category:c,amount:m,frequency:f};if(editandoGastoId){const i=gastosFijos.findIndex(g=>g.id===editandoGastoId);if(i!==-1)gastosFijos[i]={...gastosFijos[i],...d}}else{d.id='gas_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);gastosFijos.push(d)}guardarState();renderGastos();cerrarModal('modal-gasto')}
+function editarGasto(id){const g=gastosFijos.find(x=>x.id===id);if(g)abrirModalGasto(g)}
+function eliminarGasto(id){if(!confirm('¿Eliminar?'))return;gastosFijos=gastosFijos.filter(g=>g.id!==id);guardarState();renderGastos()}
+
+// ========== DASHBOARD ==========
+async function renderDashboard(){const cont=document.getElementById('dashboard-content'),selP=document.getElementById('dash-platillo'),selF=document.getElementById('dash-plataforma');selP.innerHTML='<option value="__promedio__">— Promedio —</option>'+platillos.map(p=>`<option value="${p.id}">${escHtml(p.name)}</option>`).join('');const pa=configPlataformas.plataformas.filter(p=>p.activa);selF.innerHTML=pa.map(p=>`<option value="${p.id}">${p.icon} ${escHtml(p.nombre)}</option>`).join('');const pid=selP.value||'__promedio__',fid=selF.value||(pa[0]?pa[0].id:null),vm=parseInt(document.getElementById('dash-ventas').value)||0,pm=parseFloat(document.getElementById('dash-publicidad').value)||0,mg=parseInt(document.getElementById('margen-ganancia').value)||30
+if(!platillos.length||!pa.length){cont.innerHTML='<div class="card"><p class="empty-state"><div class="icon">📊</div><p>Se necesitan platillos y plataformas activas.</p></div>';return}
+const pltf=configPlataformas.plataformas.find(p=>p.id===fid);if(!pltf){cont.innerHTML='';return}
+cont.innerHTML='<div class="card" style="text-align:center;padding:3rem"><span style="font-size:2rem;opacity:.4">📊</span><p style="color:var(--text-light);margin-top:.5rem">Calculando...</p></div>'
+try{const bu=getBackendUrl();const res=await fetch(bu+'/api/calculate/dashboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platilloId:pid,plataformaId:fid,ventas:vm,publicidad:pm,margenGanancia:mg})});const d=await res.json();if(!d.ok){cont.innerHTML='<div class="card"><p class="empty-state"><div class="icon">⚠️</div><p>Error del servidor</p></div>';return}
+function barra(t,sg){const v=sg.filter(s=>s.p>0.5);if(!v.length||t<=0)return'<div style="padding:.5rem;color:var(--text-light)">Sin datos</div>';return v.map(s=>`<div class="seg ${s.c}" style="width:${Math.min(s.p,100)}%;min-width:${s.p>5?'40px':'0'}">${s.p>5?s.l:''}</div>`).join('')}
+cont.innerHTML=`<div class="dash-grid"><div class="card-dash" style="border-top:4px solid var(--secondary)"><div class="dash-value">${d.ventas}</div><div class="dash-label">Platillos/mes</div></div><div class="card-dash" style="border-top:4px solid #27ae60"><div class="dash-value" style="color:#27ae60">$${d.ingresoMensual.toFixed(2)}</div><div class="dash-label">Ingreso mensual</div><div style="font-size:.75rem;color:var(--text-light)">$${d.precioBase.toFixed(2)}×${d.ventas}</div></div><div class="card-dash" style="border-top:4px solid var(--primary)"><div class="dash-value" style="color:var(--primary)">$${d.utilidadNeta.toFixed(2)}</div><div class="dash-label">Utilidad neta mensual</div><div style="font-size:.75rem">${d.margenNetoPct.toFixed(1)}% margen</div></div><div class="card-dash" style="border-top:4px solid var(--accent)"><div class="dash-value" style="color:var(--accent)">${d.puntoEquilibrio===Infinity?'∞':d.puntoEquilibrio}</div><div class="dash-label">Punto equilibrio (uds)</div><div style="font-size:.75rem">$${(d.totalGastosFijos+d.publicidad).toFixed(0)} / $${d.contribucionMarginal.toFixed(2)}</div></div></div>
+<div class="grid-2"><div class="card"><h3>📋 Estado Resultados Mensual</h3><table class="pnl-table"><tr><td><strong>Ingreso ventas</strong></td><td class="text-right">$${d.ingresoMensual.toFixed(2)}</td><td style="font-size:.75rem;color:var(--text-light)">100%</td></tr><tr><td style="padding-left:1rem">Costo ingredientes</td><td class="text-right">-$${d.costoIngMensual.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.costoIngMensual/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr><td style="padding-left:1rem">Comisión ${pltf.nombre}</td><td class="text-right">-$${d.comMensual.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.comMensual/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr><td style="padding-left:1rem">IVA comisión</td><td class="text-right">-$${d.ivaComMensual.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.ivaComMensual/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr class="sub-total"><td><strong>Margen bruto</strong></td><td class="text-right fw-bold" style="color:${d.margenBrutoPct>0?'#27ae60':'#e74c3c'}">$${(d.ingresoMensual-d.costoIngMensual-d.comMensual-d.ivaComMensual).toFixed(2)}</td><td style="font-size:.75rem">${d.margenBrutoPct.toFixed(1)}%</td></tr><tr><td style="padding-left:1rem">Gastos fijos</td><td class="text-right">-$${d.totalGastosFijos.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.totalGastosFijos/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr><td style="padding-left:1rem">Publicidad</td><td class="text-right">-$${d.publicidad.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.publicidad/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr><td style="padding-left:1rem">Ret. ISR (${configPlataformas.isrRetencion}%)</td><td class="text-right">-$${d.isrMensual.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.isrMensual/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr><td style="padding-left:1rem">Ret. IVA (${configPlataformas.ivaRetencion}%)</td><td class="text-right">-$${d.ivaRetMensual.toFixed(2)}</td><td style="font-size:.75rem">${d.ingresoMensual>0?(d.ivaRetMensual/d.ingresoMensual*100).toFixed(1):0}%</td></tr><tr class="net-row"><td><strong>Utilidad neta mensual</strong></td><td class="text-right fw-bold" style="font-size:1.3rem;color:${d.utilidadNeta>=0?'#27ae60':'#e74c3c'}">$${d.utilidadNeta.toFixed(2)}</td><td style="font-size:.85rem">${d.margenNetoPct.toFixed(1)}%</td></tr></table></div>
+<div class="card"><h3>📊 Estructura de Costos</h3><div class="bar-chart"><div class="bar-track">${barra(d.ingresoMensual,[{l:'Ingredientes',p:d.ingresoMensual>0?d.costoIngMensual/d.ingresoMensual*100:0,c:'ingredientes'},{l:'Comisión',p:d.ingresoMensual>0?(d.comMensual+d.ivaComMensual)/d.ingresoMensual*100:0,c:'comision'},{l:'Impuestos',p:d.ingresoMensual>0?(d.isrMensual+d.ivaRetMensual)/d.ingresoMensual*100:0,c:'impuestos'},{l:'Gastos Fijos',p:d.ingresoMensual>0?d.totalGastosFijos/d.ingresoMensual*100:0,c:'gastos'},{l:'Publicidad',p:d.ingresoMensual>0?d.publicidad/d.ingresoMensual*100:0,c:'publicidad'},{l:'Ganancia',p:d.ingresoMensual>0?Math.max(0,d.utilidadNeta/d.ingresoMensual*100):0,c:'ganancia'}])}</div><div class="legend mt-1">${[['#e74c3c','Ingredientes'],['var(--accent)','Comisión'],['#3498db','Impuestos'],['#9b59b6','Gastos Fijos'],['#1abc9c','Publicidad'],['#27ae60','Ganancia']].map(([c,l])=>`<span class="legend-item"><span class="legend-dot" style="background:${c}"></span> ${l}</span>`).join('')}</div></div>
+<div style="margin-top:1.5rem"><h3 style="margin-bottom:.5rem">💰 Por Platillo</h3><table style="font-size:.85rem"><thead><tr><th>Concepto</th><th class="text-right">Por plato</th></tr></thead><tbody><tr><td>Precio venta</td><td class="text-right fw-bold">$${d.precioBase.toFixed(2)}</td></tr><tr><td>Costo ingredientes</td><td class="text-right text-danger">-$${d.costoBase.toFixed(2)}</td></tr><tr><td>Comisión (${pltf.comision}%)</td><td class="text-right text-danger">-$${d.comision.toFixed(2)}</td></tr><tr><td>IVA comisión</td><td class="text-right text-danger">-$${d.ivaComision.toFixed(2)}</td></tr><tr><td>Retenciones fiscales</td><td class="text-right text-danger">-$${(d.isrRet+d.ivaRet).toFixed(2)}</td></tr><tr><td>Neto recibido</td><td class="text-right fw-bold" style="color:#27ae60">$${d.neto.toFixed(2)}</td></tr><tr style="border-top:2px solid var(--secondary)"><td><strong>Contribución marginal</strong></td><td class="text-right fw-bold" style="font-size:1rem;color:${d.contribucionMarginal>0?'#27ae60':'#e74c3c'}">$${d.contribucionMarginal.toFixed(2)}</td></tr></tbody></table></div></div></div>
+<div class="card"><h3>🏢 Gastos Fijos Mensuales</h3><div class="grid-3">${Object.entries(gastosFijos.reduce((a,g)=>{const c=g.category||'Otros';a[c]=(a[c]||0)+(calcularMontoMensual(g)||0);return a},{})).sort((a,b)=>b[1]-a[1]).map(([c,m])=>`<div class="gasto-cat-card"><div class="cat-monto">$${m.toFixed(2)}</div><div class="cat-nombre">${escHtml(c)}</div></div>`).join('')}${!gastosFijos.length?'<p class="text-muted" style="text-align:center;grid-column:1/-1">Sin gastos fijos.</p>':''}</div>
+<div class="breakeven-box mt-1"><div class="be-value">${d.puntoEquilibrio===Infinity?'∞':d.puntoEquilibrio}</div><div class="be-label">Platillos a vender para cubrir todos los costos</div><div class="be-sub">Gastos fijos+publicidad: <strong>$${(d.totalGastosFijos+d.publicidad).toFixed(2)}</strong> · Contribución: <strong>$${d.contribucionMarginal.toFixed(2)}</strong> · Ventas: <strong>${d.ventas}</strong></div></div></div>`
+}catch(e){cont.innerHTML='<div class="card"><p class="empty-state"><div class="icon">⚠️</div><p>Error de conexión al servidor. Verifica que el backend esté corriendo.</p></div>'}}
+
+// ========== TIENDA ONLINE / CONFIG ==========
+function renderTienda(){const ct=configTienda;document.getElementById('store-nombre').value=ct.nombre;document.getElementById('store-desc').value=ct.desc;document.getElementById('store-color').value=ct.color;document.getElementById('store-envio').value=ct.envio;document.getElementById('store-min').value=ct.minOrder;document.getElementById('store-moneda').value=ct.moneda;document.getElementById('mp-public-key').value=ct.mpPublicKey;document.getElementById('mp-backend-url').value=ct.mpBackendUrl||'http://localhost:3001';
+  document.getElementById('admin-token').value = adminToken ? '•••••' : '';
+  cargarMpConfigFromBackend();
+const lp=document.getElementById('store-logo-preview');lp.innerHTML=ct.logo?'<img src="'+ct.logo+'" class="preview-img" style="width:64px;height:64px">':'<span class="text-muted" style="font-size:.8rem">Sin logo</span>';
+const bp=document.getElementById('store-banner-preview');bp.innerHTML=ct.banner?'<img src="'+ct.banner+'" class="preview-img" style="width:200px;height:80px;object-fit:cover">':'<span class="text-muted" style="font-size:.8rem">Sin banner</span>';
+const cl=document.getElementById('categorias-lista');cl.innerHTML=ct.categorias.map((c,i)=>`<span style="display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .7rem;background:var(--bg);border-radius:50px;font-size:.85rem;border:1px solid var(--border)">${escHtml(c)}<button onclick="eliminarCategoria(${i})" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:1rem">&times;</button></span>`).join('');
+const si=document.getElementById('platillos-sin-imagen');const sinImg=platillos.filter(p=>!p.image);si.innerHTML=sinImg.length?sinImg.map(p=>`<span style="display:inline-flex;align-items:center;gap:.5rem;margin:.25rem;padding:.25rem .5rem;background:#fef5e7;border-radius:6px;font-size:.85rem">📷 ${escHtml(p.name)} <button class="btn btn-sm btn-accent" onclick="editarPlatillo('${p.id}')">Subir</button></span>`).join(''):'<span class="text-success">✅ Todos los platillos tienen imagen</span>';}
+
+function guardarConfigTienda(){configTienda.nombre=document.getElementById('store-nombre').value.trim()||'Mi Restaurante';configTienda.desc=document.getElementById('store-desc').value.trim();configTienda.color=document.getElementById('store-color').value;configTienda.envio=parseFloat(document.getElementById('store-envio').value)||0;configTienda.minOrder=parseFloat(document.getElementById('store-min').value)||0;configTienda.moneda=document.getElementById('store-moneda').value;configTienda.mpPublicKey=document.getElementById('mp-public-key').value.trim();const bu=document.getElementById('mp-backend-url').value.trim();configTienda.mpBackendUrl=bu||'http://localhost:3001';localStorage.setItem('costeapp_backend_url',configTienda.mpBackendUrl);guardarState();
+  // Save admin token to sessionStorage
+  const token = document.getElementById('admin-token').value.trim();
+  if (token) setAdminToken(token);
+  // Sync Public Key to backend
+  const pk = configTienda.mpPublicKey;
+  if (pk) {
+    fetch(getBackendUrl()+'/api/config/mp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ publicKey: pk })
+    }).catch(()=>{});
+  }}
+
+// ─── MP Config Management ───────────────────────────────────────
+async function cargarMpConfigFromBackend() {
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu+'/api/config/mp');
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('mp-access-token').placeholder = data.hasToken
+      ? (data.fromEnv ? 'Usando .env: ' + data.accessToken : data.accessToken)
+      : 'APP_USR-xxxx-...';
+    if (!data.fromEnv && data.accessToken && data.accessToken.includes('••••')) {
+      document.getElementById('mp-access-token').placeholder = 'Guardado: ' + data.accessToken;
+    }
+    document.getElementById('mp-environment').value = data.environment || 'production';
+    document.getElementById('mp-webhook-url').value = data.webhookUrl || '';
+    const msg = document.getElementById('mp-config-status');
+    if (data.hasToken) {
+      msg.innerHTML = '<span style="color:#27ae60">✅ MP configurado' + (data.fromEnv ? ' (desde .env)' : '') + '</span>';
+    } else {
+      msg.innerHTML = '<span style="color:var(--text-light)">⚠️ Sin Access Token — el checkout no funcionará</span>';
+    }
+  } catch (e) {
+    // Backend not available, ignore
+  }
+}
+
+async function guardarMpConfig() {
+  const accessToken = document.getElementById('mp-access-token').value.trim();
+  const publicKey = document.getElementById('mp-public-key').value.trim();
+  const webhookUrl = document.getElementById('mp-webhook-url').value.trim();
+  const environment = document.getElementById('mp-environment').value;
+  const msg = document.getElementById('mp-config-status');
+
+  if (!accessToken && !publicKey) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Ingresa al menos un valor (Public Key o Access Token)</span>';
+    return;
+  }
+
+  msg.innerHTML = '<span style="color:var(--text-light)">⏳ Guardando...</span>';
+  try {
+    const bu = getBackendUrl();
+    const body = { environment, webhookUrl };
+    if (accessToken) body.accessToken = accessToken;
+    if (publicKey) body.publicKey = publicKey;
+
+    const res = await fetch(bu+'/api/config/mp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msg.innerHTML = '<span style="color:#27ae60">✅ ' + escHtml(data.message) + '</span>';
+      document.getElementById('mp-access-token').value = '';
+      cargarMpConfigFromBackend();
+    } else {
+      msg.innerHTML = '<span style="color:#e74c3c">❌ ' + escHtml(data.message || 'Error') + '</span>';
+    }
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Error al guardar: ' + escHtml(e.message) + '</span>';
+  }
+}
+
+async function probarMpConexion() {
+  const accessToken = document.getElementById('mp-access-token').value.trim();
+  const publicKey = document.getElementById('mp-public-key').value.trim();
+  const btn = document.getElementById('btn-test-mp');
+  const msg = document.getElementById('mp-config-status');
+
+  if (!accessToken && !publicKey) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Ingresa un Access Token o Public Key para probar</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Probando...';
+  msg.innerHTML = '<span style="color:var(--text-light)">⏳ Verificando credenciales...</span>';
+
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu+'/api/test/mp-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken, publicKey })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msg.innerHTML = '<span style="color:#27ae60">✅ ' + escHtml(data.message) + '</span>';
+    } else {
+      msg.innerHTML = '<span style="color:#e74c3c">❌ ' + escHtml(data.message) + '</span>';
+    }
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Error: ' + escHtml(e.message) + '</span>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔍 Probar';
+}
+
+function alternarVisibilidadToken() {
+  const input = document.getElementById('mp-access-token');
+  const btn = document.getElementById('mp-token-toggle');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+async function subirImagenStore(tipo,input){const file=input.files[0];if(!file)return;if(file.size>500*1024){alert('La imagen debe ser menor a 500KB.');return}
+const bu=getBackendUrl();const form=new FormData();form.append('image',file);
+try{const res=await fetch(bu+'/api/upload/image',{method:'POST',body:form});const data=await res.json();if(data.ok){configTienda[tipo]=data.url;guardarConfigTienda();renderTienda()}else{alert('Error: '+data.error)}}catch(e){alert('Error de conexión')};input.value=''}
+
+function agregarCategoria(){const input=document.getElementById('nueva-categoria'),v=input.value.trim();if(!v)return;if(configTienda.categorias.includes(v)){alert('Ya existe.');return}configTienda.categorias.push(v);guardarConfigTienda();renderTienda();input.value=''}
+function eliminarCategoria(i){if(!confirm('¿Eliminar categoría?'))return;configTienda.categorias.splice(i,1);guardarConfigTienda();renderTienda()}
+
+// ─── Backup Functions ───────────────────────────────────────────
+async function crearBackupManual() {
+  const msg = document.getElementById('backup-status');
+  msg.innerHTML = '<span style="color:var(--text-light)">⏳ Creando backup...</span>';
+  try {
+    const res = await fetch(getBackendUrl() + '/api/backup/now', { method: 'POST' });
+    const data = await res.json();
+    msg.innerHTML = data.ok
+      ? '<span style="color:#27ae60">✅ Backup creado correctamente</span>'
+      : '<span style="color:#e74c3c">❌ Error: ' + (data.error || 'desconocido') + '</span>';
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#e74c3c">❌ Error de conexión</span>';
+  }
+}
+
+async function listarBackups() {
+  const list = document.getElementById('backup-list');
+  const msg = document.getElementById('backup-status');
+  list.innerHTML = '<span style="color:var(--text-light)">⏳ Cargando...</span>';
+  try {
+    const res = await fetch(getBackendUrl() + '/api/backups');
+    const data = await res.json();
+    if (!data.ok || !data.backups.length) {
+      list.innerHTML = '<span class="text-muted">Sin backups disponibles</span>';
+      return;
+    }
+    list.innerHTML = data.backups.slice(0, 10).map(b =>
+      `<div style="display:flex;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid var(--border)">
+        <span>${b.name}</span>
+        <span style="color:var(--text-light)">${(b.size / 1024).toFixed(1)} KB · ${new Date(b.date).toLocaleDateString()}</span>
+      </div>`
+    ).join('');
+    if (data.backups.length > 10) {
+      list.innerHTML += `<div class="text-muted" style="padding:.25rem 0">... y ${data.backups.length - 10} más</div>`;
+    }
+    msg.innerHTML = '';
+  } catch (e) {
+    list.innerHTML = '<span style="color:#e74c3c">Error de conexión</span>';
+  }
+}
+
+// ========== STOREFRONT ==========
+function abrirTienda(){document.getElementById('storefront').classList.add('open');document.body.classList.add('storefront-active');document.documentElement.style.setProperty('--store-primary',configTienda.color);renderStore()}
+function cerrarTienda(){document.getElementById('storefront').classList.remove('open');document.body.classList.remove('storefront-active');cerrarCarrito()}
+
+function renderStore(){const ct=configTienda;document.getElementById('store-name-el').textContent=ct.nombre;document.getElementById('store-desc-el').textContent=ct.desc||'';
+const banner=document.getElementById('store-banner-img');banner.innerHTML=ct.banner?'<img src="'+ct.banner+'" style="width:100%;height:100%;object-fit:cover">':'';
+const logo=document.querySelector('.store-logo');if(ct.logo){if(!logo){const l=document.createElement('img');l.className='store-logo';l.src=ct.logo;document.getElementById('store-banner-el').appendChild(l)}else{logo.src=ct.logo}}else if(logo)logo.remove();
+const cats=document.getElementById('store-cats');cats.innerHTML='<div class="cat-chip active" onclick="filtrarCategoria(\'todas\',this)">🍽️ Todas</div>'+ct.categorias.map(c=>`<div class="cat-chip" onclick="filtrarCategoria('${c}',this)">${c}</div>`).join('');
+renderStoreDishes();actualizarCarritoUI()}
+
+function filtrarCategoria(cat,el){document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');storeCategoriaActiva=cat;renderStoreDishes()}
+function renderStoreDishes(){const busq=document.getElementById('store-search').value.toLowerCase().trim();const cont=document.getElementById('store-dishes');const filtrados=platillos.filter(p=>{if(storeCategoriaActiva!=='todas'&&p.category!==storeCategoriaActiva)return false;if(busq&&!p.name.toLowerCase().includes(busq)&&!(p.description||'').toLowerCase().includes(busq))return false;return true});
+if(!filtrados.length){cont.innerHTML='<div class="empty-state"><div class="icon">🍽️</div><p>No hay platillos disponibles.</p></div>';return}
+cont.innerHTML=filtrados.map(p=>{const ct=calcularCostoPlatillo(p),mg=parseInt(document.getElementById('margen-ganancia').value)||30;let precio=p.precioMenu||(mg>0?((p.portions>0?ct/p.portions:ct)/(1-mg/100)):0);precio=Math.max(precio,1);const itemEnCarrito=carrito.items.find(i=>i.id===p.id);const qty=itemEnCarrito?itemEnCarrito.qty:0;const img=p.image||'';return `<div class="store-dish">
+${img?'<img class="store-dish-img" src="'+img+'" alt="">':'<div class="store-dish-img-placeholder">🍽️</div>'}
+<div class="store-dish-info"><div><h4>${escHtml(p.name)}</h4>${p.description?'<div class="desc">'+escHtml(p.description)+'</div>':''}</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:.35rem"><span class="price">$${precio.toFixed(2)}</span>${qty>0?`<div class="qty-control"><button onclick="carritoCambiarQty('${p.id}',-1)">−</button><span>${qty}</span><button onclick="carritoCambiarQty('${p.id}',1)">+</button></div>`:`<button class="add-btn" onclick="carritoAgregar('${p.id}')">+</button>`}</div></div></div>`}).join('')}
+
+// ========== CARRITO ==========
+function carritoAgregar(id){const p=platillos.find(x=>x.id===id);if(!p)return;const existing=carrito.items.find(i=>i.id===id);if(existing){existing.qty++}else{const mg=parseInt(document.getElementById('margen-ganancia').value)||30,ct=calcularCostoPlatillo(p);let precio=p.precioMenu||(mg>0?((p.portions>0?ct/p.portions:ct)/(1-mg/100)):0);precio=Math.max(precio,1);carrito.items.push({id,p,name:p.name,price:precio,image:p.image||'',qty:1})}renderStoreDishes();actualizarCarritoUI()}
+function carritoCambiarQty(id,delta){const item=carrito.items.find(i=>i.id===id);if(!item)return;item.qty+=delta;if(item.qty<=0){carrito.items=carrito.items.filter(i=>i.id!==id)}renderStoreDishes();actualizarCarritoUI()}
+function carritoEliminar(id){carrito.items=carrito.items.filter(i=>i.id!==id);renderStoreDishes();actualizarCarritoUI()}
+function actualizarCarritoUI(){const fab=document.querySelector('.cart-fab'),cnt=carrito.items.reduce((s,i)=>s+i.qty,0);if(!cnt){if(fab)fab.remove();document.querySelector('.cart-fab')&&document.querySelector('.cart-fab').classList.remove('show');return}
+if(!document.querySelector('.cart-fab')){const f=document.createElement('button');f.className='cart-fab';f.innerHTML='🛒 <span class="cart-count">0</span> Ver pedido';f.onclick=abrirCarrito;document.body.appendChild(f)}
+const f=document.querySelector('.cart-fab');f.classList.add('show');f.querySelector('.cart-count').textContent=cnt;f.innerHTML='🛒 <span class="cart-count">'+cnt+'</span> Ver pedido · <strong>$'+carrito.items.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2)+'</strong>';f.onclick=abrirCarrito;renderCartSheet()}
+
+function abrirCarrito(){document.getElementById('cart-overlay').classList.add('open');document.getElementById('cart-sheet').classList.add('open');renderCartSheet()}
+function cerrarCarrito(){document.getElementById('cart-overlay').classList.remove('open');document.getElementById('cart-sheet').classList.remove('open')}
+
+function renderCartSheet(){const items=document.getElementById('cart-items'),footer=document.getElementById('cart-footer');if(!carrito.items.length){items.innerHTML='<div class="empty-state" style="padding:1rem"><div class="icon">🛒</div><p style="font-size:.9rem">Tu carrito está vacío</p></div>';footer.innerHTML='';return}
+items.innerHTML=carrito.items.map(i=>`<div class="cart-item"><img class="cart-item-img" src="${i.image||''}" alt="" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2244%22 height=%2244%22><rect fill=%22%23f0edeb%22 width=%2244%22 height=%2244%22 rx=%228%22/></svg>'"><div class="cart-item-info"><div class="ci-name">${escHtml(i.name)}</div><div class="ci-price">$${(i.price*i.qty).toFixed(2)}</div></div><div class="cart-qty"><button onclick="carritoCambiarQty('${i.id}',-1)">−</button><span>${i.qty}</span><button onclick="carritoCambiarQty('${i.id}',1)">+</button></div><button onclick="carritoEliminar('${i.id}')" style="border:none;background:none;color:var(--text-light);cursor:pointer;font-size:1.1rem">✕</button></div>`).join('');
+const sub=carrito.items.reduce((s,i)=>s+i.price*i.qty,0),env=configTienda.envio||0,total=sub+env;
+footer.innerHTML=`<div style="border-top:2px solid var(--border);padding-top:1rem;margin-top:.5rem"><div class="flex-between" style="font-size:.9rem"><span>Subtotal (${carrito.items.reduce((s,i)=>s+i.qty,0)} items)</span><span>$${sub.toFixed(2)}</span></div>${env>0?`<div class="flex-between" style="font-size:.85rem;color:var(--text-light);margin-top:.25rem"><span>Envío</span><span>$${env.toFixed(2)}</span></div>`:''}<div class="flex-between" style="font-size:1.1rem;font-weight:800;margin-top:.35rem"><span>Total</span><span>$${total.toFixed(2)}</span></div>
+<button class="btn-store mt-1" onclick="mostrarCheckout()">Proceder al pago</button></div>`
+// Check cart fab
+const fab=document.querySelector('.cart-fab');if(fab){const cnt=carrito.items.reduce((s,i)=>s+i.qty,0);fab.innerHTML='🛒 <span class="cart-count">'+cnt+'</span> Ver pedido · <strong>$'+sub.toFixed(2)+'</strong>';fab.onclick=abrirCarrito}}
+
+// ========== CHECKOUT ==========
+function mostrarCheckout(){const items=document.getElementById('cart-items'),footer=document.getElementById('cart-footer');const sub=carrito.items.reduce((s,i)=>s+i.price*i.qty,0),env=configTienda.envio||0,total=sub+env;
+const mpKey=configTienda.mpPublicKey;const mpOk=mpKey&&mpKey.startsWith('APP_USR');
+// Initialize MP SDK if not done
+if(mpOk&&!window.mpInstance)window.mpInstance=new MercadoPago(mpKey);
+items.innerHTML=`<div class="checkout-form"><h3 style="margin-bottom:1rem">📋 Datos de contacto</h3>
+<div class="form-group"><label>Nombre completo</label><input type="text" id="check-nombre" placeholder="Tu nombre" value="${carrito.nombre}"></div>
+<div class="form-group"><label>Teléfono</label><input type="tel" id="check-telefono" placeholder="55 1234 5678" value="${carrito.telefono}"></div>
+<div class="form-group"><label>Dirección / Mesa</label><input type="text" id="check-direccion" placeholder="Calle, número, colonia o # de mesa" value="${carrito.direccion}"></div>
+<div class="form-group"><label>Notas (opcional)</label><textarea id="check-notas" placeholder="Instrucciones especiales...">${carrito.notas}</textarea></div>
+<h3 style="margin:1rem 0 .5rem">💳 Método de pago</h3>
+<div class="payment-methods">
+<label class="pm-option active" onclick="seleccionarMetodoPago('card',this)">
+<input type="radio" name="payment-method" value="card" checked><span class="pm-icon">💳</span> Tarjeta (débito/crédito)
+</label>
+<label class="pm-option" onclick="seleccionarMetodoPago('oxxo',this)">
+<input type="radio" name="payment-method" value="oxxo"><span class="pm-icon">🏪</span> OXXO
+</label>
+<label class="pm-option" onclick="seleccionarMetodoPago('spei',this)">
+<input type="radio" name="payment-method" value="spei"><span class="pm-icon">🏦</span> Transferencia SPEI
+</label>
+</div>
+<div id="card-form-fields" class="card-form-fields">
+<div class="full"><label>Número de tarjeta</label><input type="text" id="card-number" inputmode="numeric" placeholder="1234 5678 9012 3456" maxlength="19"></div>
+<div><label>Vencimiento</label><input type="text" id="card-expiry" placeholder="MM/AA" maxlength="5"></div>
+<div><label>CVV</label><input type="text" id="card-cvv" inputmode="numeric" placeholder="123" maxlength="4"></div>
+<div class="full"><label>Titular</label><input type="text" id="card-name" placeholder="Como aparece en la tarjeta"></div>
+</div>
+<div id="payment-info-msg"></div>
+</div>`;
+footer.innerHTML=`<div style="border-top:2px solid var(--border);padding-top:1rem;margin-top:.5rem"><div class="flex-between fw-bold" style="font-size:1.1rem"><span>Total a pagar</span><span>$${total.toFixed(2)}</span></div>
+<button class="payment-btn mt-1" onclick="procesarPago()" style="background:linear-gradient(135deg,#009ee3,#0077b6)"><svg class="mp-logo" viewBox="0 0 48 16" fill="white"><path d="M24.3 3.2c-2.2 0-4.1.9-5.5 2.3-.3.3-.3.8 0 1.1.3.3.8.3 1.1 0 1.2-1.2 2.7-1.9 4.4-1.9.4 0 .7-.3.7-.7s-.3-.8-.7-.8zM7.1 3.2c-2.2 0-4.1.9-5.5 2.3-.3.3-.3.8 0 1.1.3.3.8.3 1.1 0C3.9 5.4 5.4 4.7 7.1 4.7c.4 0 .7-.3.7-.7s-.3-.8-.7-.8z"/><path d="M45.5 0h-43C1.1 0 0 1.1 0 2.5v11c0 1.4 1.1 2.5 2.5 2.5h43c1.4 0 2.5-1.1 2.5-2.5v-11C48 1.1 46.9 0 45.5 0zm-1.5 11.4c0 .6-.5 1.1-1.1 1.1H5.1c-.6 0-1.1-.5-1.1-1.1V4.6c0-.6.5-1.1 1.1-1.1h37.8c.6 0 1.1.5 1.1 1.1v6.8z"/></svg> Pagar $${total.toFixed(2)}</button>
+<button class="btn btn-secondary w-full mt-1" onclick="cancelarCheckout()" style="justify-content:center">Volver al carrito</button></div>`}
+
+function cancelarCheckout(){carrito.nombre=document.getElementById('check-nombre').value;carrito.telefono=document.getElementById('check-telefono').value;carrito.direccion=document.getElementById('check-direccion').value;carrito.notas=document.getElementById('check-notas').value;renderCartSheet()}
+
+// ─── Payment method selection ──────────────────────────────────
+function seleccionarMetodoPago(metodo, el) {
+  document.querySelectorAll('.pm-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  el.querySelector('input[type="radio"]').checked = true;
+
+  const cardForm = document.getElementById('card-form-fields');
+  const infoMsg = document.getElementById('payment-info-msg');
+  if (metodo === 'card') {
+    cardForm.style.display = 'grid';
+    infoMsg.innerHTML = '';
+  } else if (metodo === 'oxxo') {
+    cardForm.style.display = 'none';
+    infoMsg.innerHTML = '<div style="padding:.5rem 0;font-size:.85rem;color:var(--text-light)">🧾 Al confirmar, genera un código para pagar en cualquier OXXO.</div>';
+  } else if (metodo === 'spei') {
+    cardForm.style.display = 'none';
+    infoMsg.innerHTML = '<div style="padding:.5rem 0;font-size:.85rem;color:var(--text-light)">🏦 Al confirmar, recibirás los datos para transferencia SPEI.</div>';
+  }
+}
+
+// ─── Card tokenization ─────────────────────────────────────────
+async function crearTokenTarjeta() {
+  const num = document.getElementById('card-number').value.replace(/\s/g, '');
+  const expiry = document.getElementById('card-expiry').value.trim();
+  const cvv = document.getElementById('card-cvv').value.trim();
+  const name = document.getElementById('card-name').value.trim();
+
+  if (!num || num.length < 13) { alert('Número de tarjeta inválido'); return null; }
+  if (!expiry || !/^\d{2}\/\d{2,4}$/.test(expiry)) { alert('Vencimiento inválido (MM/AA)'); return null; }
+  if (!cvv || cvv.length < 3) { alert('CVV inválido'); return null; }
+  if (!name) { alert('Nombre del titular requerido'); return null; }
+
+  const [mm, yy] = expiry.split('/');
+  const year = yy.length === 2 ? '20' + yy : yy;
+
+  try {
+    if (!window.mpInstance) {
+      const pk = configTienda.mpPublicKey;
+      if (!pk || !pk.startsWith('APP_USR')) { alert('Configura la Public Key de Mercado Pago'); return null; }
+      window.mpInstance = new MercadoPago(pk);
+    }
+    const cardToken = await window.mpInstance.createCardToken({
+      cardNumber: num,
+      cardExpirationMonth: mm.padStart(2, '0'),
+      cardExpirationYear: year,
+      securityCode: cvv,
+      cardholderName: name
+    });
+    return cardToken;
+  } catch (e) {
+    console.error('Error creating card token:', e);
+    alert('Error al procesar la tarjeta: ' + (e.message || 'verifica los datos'));
+    return null;
+  }
+}
+
+// ─── Backend URL ──────────────────────────────────────────────
+// ─── Auth ───────────────────────────────────────────────────────
+let adminToken = sessionStorage.getItem('costeapp_admin_token') || '';
+function setAdminToken(t) { adminToken = t; sessionStorage.setItem('costeapp_admin_token', t); }
+
+function getBackendUrl() {
+  let url = configTienda?.mpBackendUrl || localStorage.getItem('costeapp_backend_url') || 'http://localhost:3001';
+  if (adminToken) url += (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(adminToken);
+  return url;
+}
+
+// ─── Legacy Image Migration ─────────────────────────────────────
+async function migrarImagenesLegacy() {
+  const toMigrate = [];
+  const pushIfBase64 = (obj, field, label) => {
+    const val = obj[field];
+    if (val && typeof val === 'string' && val.startsWith('data:image') && val.length > 100) {
+      toMigrate.push({ data: val, field: label, ref: obj, refField: field });
+    }
+  };
+  for (const p of platillos) pushIfBase64(p, 'image', 'platillo:' + p.id);
+  pushIfBase64(configTienda, 'logo', 'store:logo');
+  pushIfBase64(configTienda, 'banner', 'store:banner');
+  if (!toMigrate.length) return;
+  console.log(`Migrando ${toMigrate.length} imagen(es) legacy al servidor...`);
+  try {
+    const bu = getBackendUrl();
+    const res = await fetch(bu + '/api/migrate/images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: toMigrate.map(m => ({ data: m.data, field: m.field })) })
+    });
+    const json = await res.json();
+    if (json.ok) {
+      let changed = false;
+      for (const r of json.results) {
+        if (r.migrated) {
+          const item = toMigrate[r.index];
+          item.ref[item.refField] = r.url;
+          changed = true;
+        }
+      }
+      if (changed) { guardarState(); console.log('Migración completada:', json.migrated, 'imágenes migradas'); }
+    }
+  } catch (e) { console.warn('Error en migración de imágenes:', e.message); }
+}
+
+// ─── Main payment processing ──────────────────────────────────
+async function procesarPago() {
+  const nombre = document.getElementById('check-nombre').value.trim();
+  const telefono = document.getElementById('check-telefono').value.trim();
+  const direccion = document.getElementById('check-direccion').value.trim();
+  const notas = document.getElementById('check-notas').value.trim();
+  if (!nombre || !telefono) { alert('Completa nombre y teléfono.'); return; }
+
+  carrito.nombre = nombre;
+  carrito.telefono = telefono;
+  carrito.direccion = direccion;
+  carrito.notas = notas;
+
+  const sub = carrito.items.reduce((s, i) => s + i.price * i.qty, 0);
+  const env = configTienda.envio || 0;
+  const total = sub + env;
+
+  if (!configTienda.mpPublicKey) {
+    mostrarRecibo({ id: 'RECIBO_' + Date.now(), items: [...carrito.items], total, sub, env, nombre, telefono, direccion, notas, status: 'pendiente' });
+    return;
+  }
+
+  const metodo = document.querySelector('input[name="payment-method"]:checked')?.value || 'card';
+  const btn = document.querySelector('.payment-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
+
+  try {
+    const backendUrl = getBackendUrl();
+
+    // Build payment method object
+    let paymentMethod;
+    if (metodo === 'card') {
+      const token = await crearTokenTarjeta();
+      if (!token) { if (btn) { btn.disabled = false; btn.innerHTML = 'Pagar $' + total.toFixed(2); } return; }
+      const cardType = (token.cardholder?.identification?.type === 'CPF') ? 'credit_card' : 'credit_card';
+      paymentMethod = {
+        id: token.payment_method_id || 'visa',
+        type: cardType,
+        token: token.id,
+        installments: 1
+      };
+    } else if (metodo === 'oxxo') {
+      paymentMethod = { id: 'oxxo', type: 'ticket' };
+    } else if (metodo === 'spei') {
+      paymentMethod = { id: 'spei', type: 'bank_transfer' };
+    }
+
+    const itemsPayload = [...carrito.items];
+    if (env > 0) itemsPayload.push({ name: 'Costo de envío', price: env, qty: 1 });
+
+    const res = await fetch(backendUrl + '/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: itemsPayload,
+        total,
+        currency: configTienda.moneda || 'MXN',
+        payer: { email: '', firstName: nombre, lastName: '' },
+        paymentMethod
+      })
+    });
+
+    const order = await res.json();
+
+    if (!res.ok) {
+      throw new Error(order.message || JSON.stringify(order));
+    }
+
+    // Payment created successfully
+    carrito.items = [];
+    guardarState();
+    actualizarCarritoUI();
+    cerrarCarrito();
+
+    if (metodo === 'card') {
+      // For cards: payment was processed immediately
+      const payStatus = order.transactions?.payments?.[0]?.status;
+      if (payStatus === 'approved' || payStatus === 'processed') {
+        mostrarRecibo({ id: order.id, items: itemsPayload, total, sub, env, nombre, telefono, direccion, notas, status: 'approved' });
+      } else if (payStatus === 'rejected') {
+        const detail = order.transactions?.payments?.[0]?.status_detail || '';
+        alert('Pago rechazado: ' + detail);
+        mostrarCheckout();
+      } else {
+        mostrarRecibo({ id: order.id, items: itemsPayload, total, sub, env, nombre, telefono, direccion, notas, status: 'pendiente' });
+      }
+    } else if (metodo === 'oxxo') {
+      mostrarReferenciaOXXO(order, itemsPayload, total, sub, env, nombre, telefono, direccion, notas);
+    } else if (metodo === 'spei') {
+      mostrarReferenciaSPEI(order, itemsPayload, total, sub, env, nombre, telefono, direccion, notas);
+    }
+  } catch (e) {
+    console.error('Error procesando pago:', e);
+    const msg = e.message?.length > 100 ? 'Error de comunicación con el servidor' : e.message;
+    alert('Error: ' + msg);
+    mostrarRecibo({ id: 'RECIBO_' + Date.now(), items: [...carrito.items], total, sub, env, nombre, telefono, direccion, notas, status: 'pendiente' });
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = 'Pagar $' + total.toFixed(2); }
+}
+
+// ─── OXXO Reference Display ───────────────────────────────────
+function mostrarReferenciaOXXO(order, items, total, sub, env, nombre, telefono, direccion, notas) {
+  const itemsDiv = document.getElementById('cart-items');
+  const footer = document.getElementById('cart-footer');
+
+  const payment = order.transactions?.payments?.[0] || {};
+  const paymentDetails = order._paymentDetails || {};
+  const ref = paymentDetails.transaction_details?.payment_method_reference_id || payment.id || order.id;
+  const barcodeUrl = paymentDetails.transaction_details?.external_resource_url || '';
+  const expiresAt = paymentDetails.date_of_expiration || '';
+
+  const payStatus = payment.status || 'pending';
+
+  itemsDiv.innerHTML = `<div class="payment-success">
+    <div class="icon">🏪</div>
+    <h3>Pago pendiente en OXXO</h3>
+    <p>Realiza tu pago en cualquier tienda OXXO.</p>
+    <div class="oxxo-info">
+      <div style="font-size:.85rem;color:var(--text-light);margin-bottom:.25rem">Referencia</div>
+      <div class="ref">${ref}</div>
+      ${barcodeUrl ? `<div class="barcode"><img src="${barcodeUrl}" alt="Código de barras OXXO"></div>` : ''}
+      ${expiresAt ? `<div style="font-size:.8rem;color:var(--text-danger)">Vence: ${new Date(expiresAt).toLocaleDateString()}</div>` : ''}
+      <div class="steps">🧾 Muestra este código en el OXXO y paga el monto exacto.<br>El pedido se confirmará automáticamente al recibir el pago.</div>
+    </div>
+    <div style="text-align:left;margin-top:1rem;padding:1rem;background:var(--bg);border-radius:var(--radius)">
+      <div class="flex-between"><span class="text-muted">Pedido</span><span class="fw-bold">#${order.id}</span></div>
+      <div class="flex-between mt-1"><span class="text-muted">Total</span><span class="fw-bold" style="font-size:1.2rem">$${total.toFixed(2)}</span></div>
+      <div class="flex-between mt-1"><span class="text-muted">Estado</span><span class="badge badge-warning">Pendiente OXXO</span></div>
+    </div>
+    <button class="btn btn-secondary w-full mt-1" onclick="verificarEstadoOrden('${order.id}')" style="justify-content:center">🔄 Verificar pago</button>
+  </div>`;
+
+  footer.innerHTML = `<button class="btn btn-primary w-full mt-1" onclick="cerrarCarrito();renderStoreDishes();actualizarCarritoUI()" style="justify-content:center">🔄 Nuevo pedido</button>`;
+}
+
+// ─── SPEI Reference Display ───────────────────────────────────
+function mostrarReferenciaSPEI(order, items, total, sub, env, nombre, telefono, direccion, notas) {
+  const itemsDiv = document.getElementById('cart-items');
+  const footer = document.getElementById('cart-footer');
+
+  const paymentDetails = order._paymentDetails || {};
+
+  itemsDiv.innerHTML = `<div class="payment-success">
+    <div class="icon">🏦</div>
+    <h3>Pago pendiente por SPEI</h3>
+    <p>Transfiere el monto exacto usando los siguientes datos.</p>
+    <div style="text-align:left;margin-top:1.5rem;padding:1rem;background:var(--bg);border-radius:var(--radius)">
+      <div class="flex-between"><span class="text-muted">Pedido</span><span class="fw-bold">#${order.id}</span></div>
+      <div class="flex-between mt-1"><span class="text-muted">Total</span><span class="fw-bold" style="font-size:1.2rem">$${total.toFixed(2)}</span></div>
+      <div class="flex-between mt-1"><span class="text-muted">Estado</span><span class="badge badge-warning">Pendiente SPEI</span></div>
+    </div>
+    <button class="btn btn-secondary w-full mt-1" onclick="verificarEstadoOrden('${order.id}')" style="justify-content:center">🔄 Verificar pago</button>
+  </div>`;
+
+  footer.innerHTML = `<button class="btn btn-primary w-full mt-1" onclick="cerrarCarrito();renderStoreDishes();actualizarCarritoUI()" style="justify-content:center">🔄 Nuevo pedido</button>`;
+}
+
+// ─── Poll order status ────────────────────────────────────────
+async function verificarEstadoOrden(orderId) {
+  const btn = document.querySelector('.payment-success button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+
+  try {
+    const res = await fetch(getBackendUrl() + '/api/order-status/' + orderId);
+    const order = await res.json();
+    const payStatus = order.transactions?.payments?.[0]?.status;
+
+    if (payStatus === 'approved' || payStatus === 'processed') {
+      alert('✅ ¡Pago confirmado!');
+      cerrarCarrito();
+    } else if (payStatus === 'rejected') {
+      alert('❌ El pago fue rechazado.');
+    } else {
+      alert('⏳ El pago aún está pendiente. Intenta de nuevo más tarde.');
+    }
+  } catch (e) {
+    console.error('Error verifying order:', e);
+    alert('Error al verificar. Intenta de nuevo.');
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 Verificar pago'; }
+}
+
+function mostrarRecibo(r){const items=document.getElementById('cart-items'),footer=document.getElementById('cart-footer');
+items.innerHTML=`<div class="payment-success"><div class="icon">✅</div><h3>¡Pedido recibido!</h3><p>Gracias, ${escHtml(r.nombre)}. Te confirmaremos por WhatsApp.</p>
+<div style="text-align:left;margin-top:1.5rem;padding:1rem;background:var(--bg);border-radius:var(--radius)"><div class="flex-between"><span class="text-muted">Pedido</span><span class="fw-bold">#${r.id}</span></div><div class="flex-between mt-1"><span class="text-muted">Total</span><span class="fw-bold" style="font-size:1.2rem">$${r.total.toFixed(2)}</span></div><div class="flex-between mt-1"><span class="text-muted">Estado</span><span class="badge badge-warning">${r.status==='approved'?'Pagado':'Pendiente'}</span></div></div>
+<div style="margin-top:1rem"><h4 style="font-size:.9rem;margin-bottom:.5rem">Resumen del pedido</h4>${r.items.map(i=>`<div class="flex-between" style="font-size:.85rem;padding:.25rem 0"><span>${i.qty}x ${escHtml(i.name)}</span><span>$${(i.price*i.qty).toFixed(2)}</span></div>`).join('')}${r.env>0?`<div class="flex-between" style="font-size:.85rem;padding:.25rm 0"><span>Envío</span><span>$${r.env.toFixed(2)}</span></div>`:''}</div></div>`;
+footer.innerHTML=`<button class="btn btn-primary w-full mt-1" onclick="cerrarCarrito();renderStoreDishes();actualizarCarritoUI()" style="justify-content:center">🔄 Nuevo pedido</button>`}
+
+// ========== EXPORT / IMPORT ==========
+function exportarDatos(){const d={ingredientes,platillos,gastosFijos,configPlataformas,configTienda};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='costeapp_datos_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(u)}
+function importarDatos(){const input=document.createElement('input');input.type='file';input.accept='.json';input.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.ingredientes)ingredientes=d.ingredientes;if(d.platillos)platillos=d.platillos;if(d.gastosFijos)gastosFijos=d.gastosFijos;if(d.configPlataformas)configPlataformas={...CONFIG_POR_DEFECTO,...d.configPlataformas};if(d.configTienda)configTienda={...TIENDA_DEFECTO,...d.configTienda};guardarState();['Ingredientes','Platillos','Gastos','Plataformas','Costeo','Tienda'].forEach(fn=>{try{window['render'+fn]()}catch(e){}});alert('Datos importados correctamente.')}catch(err){alert('Archivo inválido.')}};r.readAsText(f)};input.click()}
+
+// ========== INIT ==========
+cargarState();
+renderIngredientes();
+renderPlatillos();
+renderGastos();
+renderPlataformas();
+renderCosteo();
+renderDashboard();
+renderTienda();
+// Migrate legacy base64 images to server
+setTimeout(migrarImagenesLegacy, 3000);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Frontend: Netlify
+[build]
+  command = "echo 'Static site - no build required'"
+  publish = "."
+
+# Redirect all API calls to the backend (optional: remove if using admin panel's Backend URL)
+[[redirects]]
+  from = "/api/*"
+  to = "http://localhost:3001/api/:splat"
+  status = 200
+  force = false
+
+# Serve index.html for all routes (SPA fallback)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

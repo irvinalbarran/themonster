@@ -1,0 +1,6 @@
+# Backend: Railway
+$schema: https://railway.app/railway.schema.json
+build:
+  builder: NIXPACKS
+  buildCommand: npm install
+  startCommand: node server.js

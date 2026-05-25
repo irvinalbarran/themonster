@@ -1,0 +1,17 @@
+# Backend: Render
+services:
+  - type: web
+    name: costeapp-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MP_ACCESS_TOKEN
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
