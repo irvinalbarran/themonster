@@ -5,3 +5,7 @@ uploads/*
 backups/*
 !backups/.gitkeep
 *.log
+data.json
+mp-config.json
+platform-credentials.json
+.netlify/

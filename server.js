@@ -144,13 +144,16 @@ function setData(data) {
 
 /** Unit conversion */
 const UNITS = {
-  kg: { g: 1000, lb: 2.20462, oz: 35.274, ml: 1000, l: 1, pz: 1 },
-  g: { kg: 0.001, lb: 0.00220462, oz: 0.035274, ml: 1, l: 0.001, pz: 0.001 },
-  l: { ml: 1000, kg: 1, g: 1000, lb: 2.20462, oz: 35.274, pz: 1 },
-  ml: { l: 0.001, kg: 0.001, g: 1, lb: 0.00220462, oz: 0.035274, pz: 0.001 },
-  lb: { kg: 0.453592, g: 453.592, oz: 16, ml: 453.592, l: 0.453592, pz: 1 },
-  oz: { kg: 0.0283495, g: 28.3495, lb: 0.0625, ml: 28.3495, l: 0.0283495, pz: 0.0283495 },
-  pz: { kg: 1, g: 1000, lb: 2.20462, oz: 35.274, ml: 1000, l: 1 }
+  kg: { g: 1000, lb: 2.20462, oz: 35.274, ml: 1000, l: 1, L: 1, pz: 1, unidad: 1000, docena: 83.3333 },
+  g: { kg: 0.001, lb: 0.00220462, oz: 0.035274, ml: 1, l: 0.001, L: 0.001, pz: 0.001, unidad: 1, docena: 0.08333 },
+  l: { ml: 1000, kg: 1, g: 1000, lb: 2.20462, oz: 35.274, L: 1, pz: 1, unidad: 1000, docena: 83.3333 },
+  L: { ml: 1000, kg: 1, g: 1000, lb: 2.20462, oz: 35.274, l: 1, pz: 1, unidad: 1000, docena: 83.3333 },
+  ml: { l: 0.001, L: 0.001, kg: 0.001, g: 1, lb: 0.00220462, oz: 0.035274, pz: 0.001, unidad: 1, docena: 0.08333 },
+  lb: { kg: 0.453592, g: 453.592, oz: 16, ml: 453.592, l: 0.453592, L: 0.453592, pz: 1, unidad: 453.592, docena: 37.7993 },
+  oz: { kg: 0.0283495, g: 28.3495, lb: 0.0625, ml: 28.3495, l: 0.0283495, L: 0.0283495, pz: 0.0283495, unidad: 28.3495, docena: 2.36246 },
+  pz: { kg: 1, g: 1000, lb: 2.20462, oz: 35.274, ml: 1000, l: 1, L: 1, unidad: 1000, docena: 83.3333 },
+  unidad: { kg: 0.001, g: 1, ml: 1, l: 0.001, L: 0.001, pz: 1, docena: 0.08333 },
+  docena: { kg: 0.012, g: 12, ml: 12, l: 0.012, L: 0.012, pz: 12, unidad: 12 }
 };
 
 function convertUnit(value, from, to) {
@@ -160,47 +163,57 @@ function convertUnit(value, from, to) {
 }
 
 function calcularCostoUnitario(ing) {
-  if (!ing || !ing.price || !ing.qty) return 0;
-  const costPerUnit = ing.price / ing.qty;
-  const yieldFactor = ing.yield && ing.yield > 0 ? ing.yield / 100 : 1;
-  return costPerUnit / yieldFactor;
+  if (!ing) return 0;
+  const price = ing.purchasePrice || ing.price || 0;
+  const qty = ing.purchaseQuantity || ing.qty || 0;
+  if (!price || !qty) return 0;
+  const fromUnit = ing.purchaseUnit || ing.unit || 'kg';
+  const toUnit = ing.recipeUnit || 'g';
+  const yieldPct = ing.yield || 100;
+  const converted = convertUnit(qty, fromUnit, toUnit);
+  if (!converted || converted <= 0) return 0;
+  const usable = converted * (yieldPct / 100);
+  return usable > 0 ? price / usable : 0;
 }
 
 function calcularCostoPlatillo(platillo, ingredientes) {
-  if (!platillo?.recipe?.length) return 0;
-  return platillo.recipe.reduce((sum, ri) => {
+  const recipe = platillo?.ingredients || platillo?.recipe || [];
+  if (!recipe.length) return 0;
+  return recipe.reduce((sum, ri) => {
     const ing = ingredientes.find(i => i.id === ri.ingredientId);
-    if (!ing || !ri.qty) return sum;
+    const qty = ri.quantity || ri.qty || 0;
+    if (!ing || !qty) return sum;
     const unitCost = calcularCostoUnitario(ing);
-    const qtyInBase = convertUnit(ri.qty, ri.unit || ing.unit, ing.unit);
-    return sum + unitCost * qtyInBase;
+    return sum + unitCost * qty;
   }, 0);
 }
 
 function calcularNetoPlataforma(precio, comisionPct, config) {
   const c = config || {};
-  const ivaTasa = c.ivaTasa || 16;
+  const ivaTasa = (c.ivaTasa || 16) / 100;
   const tieneRFC = c.tieneRFC !== false;
-  const isrRet = tieneRFC ? (c.isrRetencion || 2.5) : 20;
-  const ivaRet = tieneRFC ? (c.ivaRetencion || 50) : 100;
+  const isrRet = tieneRFC ? (c.isrRetencion || 2.5) / 100 : 0.20;
+  const ivaRetPct = tieneRFC ? (c.ivaRetencion || 50) / 100 : 1;
 
-  const com = precio * comisionPct / 100;
-  const ivaCom = com * ivaTasa / 100;
-  const subtotal = precio - com - ivaCom;
-  const isr = subtotal * isrRet / 100;
-  const ivaRetencion = subtotal * ivaTasa * ivaRet / 100 / 100;
-  const neto = subtotal - isr - ivaRetencion;
+  const comPct = comisionPct / 100;
+  const iva = precio * ivaTasa;
+  const totalConIva = precio + iva;
+  const comision = precio * comPct;
+  const ivaCom = comision * ivaTasa;
+  const isr = isrRet * precio;
+  const ivaRet = ivaRetPct * iva;
+  const neto = totalConIva - comision - ivaCom - isr - ivaRet;
 
   return {
     neto,
-    c: com,
+    c: comision,
     ic: ivaCom,
     ir: isr,
-    ivr: ivaRetencion,
-    subtotal,
-    isrRetPct: isrRet,
-    ivaRetPct: ivaRet,
-    ivaTasa
+    ivr: ivaRet,
+    subtotal: totalConIva,
+    isrRetPct: isrRet * 100,
+    ivaRetPct: ivaRetPct * 100,
+    ivaTasa: ivaTasa * 100
   };
 }
 
@@ -374,17 +387,18 @@ app.post('/api/calculate/costing', (req, res) => {
       return { id: pl.id, name: pl.nombre, icon: pl.icon, comision: pl.comision, ...net };
     });
 
+    const pRecipe = p.ingredients || p.recipe || [];
     return {
       id: p.id, name: p.name, icon: p.icon || '🍽️',
       costo, precioVenta, portions: po,
       platforms: platformNets,
-      recipeCount: p.recipe?.length || 0,
-      ingredients: (p.recipe || []).map(ri => {
+      recipeCount: pRecipe.length,
+      ingredients: pRecipe.map(ri => {
         const ing = ingredientes.find(i => i.id === ri.ingredientId);
         if (!ing) return null;
+        const qty = ri.quantity || ri.qty || 0;
         const unitCost = calcularCostoUnitario(ing);
-        const qtyInBase = convertUnit(ri.qty, ri.unit || ing.unit, ing.unit);
-        return { name: ing.name, qty: ri.qty, unit: ri.unit || ing.unit, cost: unitCost * qtyInBase };
+        return { name: ing.name, qty, unit: ing.recipeUnit || ing.unit || 'g', cost: unitCost * qty };
       }).filter(Boolean)
     };
   });
